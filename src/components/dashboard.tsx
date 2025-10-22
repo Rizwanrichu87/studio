@@ -366,15 +366,25 @@ export default function Dashboard() {
                         </CardHeader>
                         <CardContent>
                           <ChartContainer config={chartConfig} className="h-[200px] w-full">
-                            <ResponsiveContainer>
-                              <BarChart data={chartData} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
-                                  <CartesianGrid vertical={false} />
-                                  <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
-                                  <YAxis />
-                                  <Tooltip cursor={false} content={<ChartTooltipContent />} />
-                                  <Bar dataKey="completed" fill="var(--color-completed)" radius={4} />
-                                </BarChart>
-                            </ResponsiveContainer>
+                            <BarChart accessibilityLayer data={chartData} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
+                              <CartesianGrid vertical={false} />
+                              <XAxis
+                                dataKey="date"
+                                tickLine={false}
+                                axisLine={false}
+                                tickMargin={8}
+                              />
+                              <YAxis />
+                              <ChartTooltip
+                                cursor={false}
+                                content={<ChartTooltipContent />}
+                              />
+                              <Bar
+                                dataKey="completed"
+                                fill="var(--color-completed)"
+                                radius={4}
+                              />
+                            </BarChart>
                           </ChartContainer>
                         </CardContent>
                       </Card>
