@@ -3,8 +3,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { Plus } from "lucide-react";
-import { useState } from "react";
+import { Plus, Pencil } from "lucide-react";
+import { useState, useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -49,17 +49,28 @@ const formSchema = z.object({
 
 interface AddHabitDialogProps {
   children: React.ReactNode;
-  onHabitAdd: (habit: Omit<Habit, 'id' | 'completed_dates'>) => void;
-  // TODO: Add edit functionality
-  // habitToEdit?: Habit;
+  onHabitSubmit: (habit: Omit<Habit, 'id' | 'completed_dates'>) => void;
+  habitToEdit?: Habit;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function AddHabitDialog({ children, onHabitAdd }: AddHabitDialogProps) {
-  const [open, setOpen] = useState(false);
+export function AddHabitDialog({ children, onHabitSubmit, habitToEdit, open: controlledOpen, onOpenChange: controlledOnOpenChange }: AddHabitDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = controlledOnOpenChange ?? setInternalOpen;
+
+  const isEditMode = !!habitToEdit;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    defaultValues: isEditMode ? {
+      name: habitToEdit.name,
+      frequency: habitToEdit.frequency,
+      reminderTime: habitToEdit.reminderTime || "",
+      icon: habitToEdit.icon,
+    } : {
       name: "",
       frequency: "daily",
       reminderTime: "",
@@ -67,14 +78,33 @@ export function AddHabitDialog({ children, onHabitAdd }: AddHabitDialogProps) {
     },
   });
 
+  useEffect(() => {
+    if (isEditMode && habitToEdit) {
+      form.reset({
+        name: habitToEdit.name,
+        frequency: habitToEdit.frequency,
+        reminderTime: habitToEdit.reminderTime || "",
+        icon: habitToEdit.icon,
+      });
+    } else {
+        form.reset({
+            name: "",
+            frequency: "daily",
+            reminderTime: "",
+            icon: "Target",
+        });
+    }
+  }, [habitToEdit, isEditMode, form, open]);
+
+
   function onSubmit(values: z.infer<typeof formSchema>) {
-    onHabitAdd({
+    onHabitSubmit({
         ...values,
         icon: values.icon as keyof typeof habitIcons,
     });
     toast({
-      title: "Habit Added",
-      description: `"${values.name}" has been added to your list.`,
+      title: isEditMode ? "Habit Updated" : "Habit Added",
+      description: `"${values.name}" has been ${isEditMode ? 'updated' : 'added'}.`,
     });
     setOpen(false);
     form.reset();
@@ -85,9 +115,9 @@ export function AddHabitDialog({ children, onHabitAdd }: AddHabitDialogProps) {
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New Habit</DialogTitle>
+          <DialogTitle>{isEditMode ? "Edit Habit" : "Add New Habit"}</DialogTitle>
           <DialogDescription>
-            Create a new habit to track. Click save when you're done.
+            {isEditMode ? "Update the details of your habit." : "Create a new habit to track. Click save when you're done."}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -148,7 +178,7 @@ export function AddHabitDialog({ children, onHabitAdd }: AddHabitDialogProps) {
                               className="flex items-center space-x-3 space-y-0"
                             >
                               <FormControl>
-                                 <RadioGroupItem value={iconName} id={iconName} className="sr-only" />
+                                <RadioGroupItem value={iconName} id={iconName} className="sr-only" />
                               </FormControl>
                               <Label htmlFor={iconName} className={`cursor-pointer rounded-md border-2 border-transparent p-2 transition-colors hover:bg-accent hover:text-accent-foreground ${field.value === iconName ? 'border-primary bg-accent' : ''}`}>
                                 <Icon className="h-6 w-6" />
@@ -178,8 +208,8 @@ export function AddHabitDialog({ children, onHabitAdd }: AddHabitDialogProps) {
             </div>
             <DialogFooter>
               <Button type="submit">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Habit
+                {isEditMode ? <Pencil className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}
+                {isEditMode ? 'Save Changes' : 'Add Habit'}
               </Button>
             </DialogFooter>
           </form>

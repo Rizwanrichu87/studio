@@ -39,6 +39,9 @@ import {
   Target,
   Trophy,
   XCircle,
+  MoreVertical,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import Logo from "./logo";
 import { StatCard } from "./stat-card";
@@ -47,7 +50,7 @@ import {
   habitIcons,
 } from "@/lib/data";
 import { useState, useMemo, useEffect } from "react";
-import type { Habit, Achievement, ProgressData } from "@/lib/types";
+import type { Habit, Achievement } from "@/lib/types";
 import { AddHabitDialog } from "./add-habit-dialog";
 import { AIHelper } from "./ai-helper";
 import { Calendar } from "./ui/calendar";
@@ -59,12 +62,23 @@ import {
   ChartLegend,
   ChartLegendContent,
 } from "@/components/ui/chart";
-import { BarChart, Bar, CartesianGrid, XAxis, YAxis, LineChart, Line, Legend } from 'recharts';
+import { BarChart, Bar, CartesianGrid, XAxis, YAxis, LineChart, Line } from 'recharts';
 import { cn } from "@/lib/utils";
 import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { addDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { collection, doc } from "firebase/firestore";
-import { startOfWeek, endOfWeek, eachDayOfInterval, format, parseISO, isSameDay, getDay, getDate, subDays } from 'date-fns';
+import { startOfWeek, endOfWeek, eachDayOfInterval, format, parseISO, subDays } from 'date-fns';
+import Link from "next/link";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Dashboard() {
   const auth = useAuth();
@@ -77,10 +91,15 @@ export default function Dashboard() {
   }, [firestore, user]);
   
   const { data: habits = [], isLoading: isLoadingHabits } = useCollection<Habit>(habitsQuery);
-
-  const [achievements, setAchievements] = useState<Achievement[]>(mockAchievements);
+  
+  const [achievements] = useState<Achievement[]>(mockAchievements);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [activeTab, setActiveTab] = useState("today");
+
+  const [habitToEdit, setHabitToEdit] = useState<Habit | undefined>(undefined);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [habitToDelete, setHabitToDelete] = useState<Habit | undefined>(undefined);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const todayISO = selectedDate.toISOString().split("T")[0];
 
@@ -100,15 +119,40 @@ export default function Dashboard() {
     updateDocumentNonBlocking(docRef, { completed_dates: Array.from(newCompletedDates) });
   };
   
-  const handleAddHabit = (newHabit: Omit<Habit, 'id' | 'completed_dates'>) => {
+  const handleHabitSubmit = (submittedHabit: Omit<Habit, 'id' | 'completed_dates'>) => {
     if (!user) return;
-    const collectionRef = collection(firestore, 'users', user.uid, 'habits');
-    addDocumentNonBlocking(collectionRef, {
-        ...newHabit,
+    if (habitToEdit) {
+      // Update existing habit
+      const docRef = doc(firestore, 'users', user.uid, 'habits', habitToEdit.id);
+      updateDocumentNonBlocking(docRef, submittedHabit);
+    } else {
+      // Add new habit
+      const collectionRef = collection(firestore, 'users', user.uid, 'habits');
+      addDocumentNonBlocking(collectionRef, {
+        ...submittedHabit,
         completed_dates: [],
-    });
+      });
+    }
+  };
+
+  const handleDeleteHabit = () => {
+    if (!habitToDelete || !user) return;
+    const docRef = doc(firestore, 'users', user.uid, 'habits', habitToDelete.id);
+    deleteDocumentNonBlocking(docRef);
+    setIsDeleteDialogOpen(false);
+    setHabitToDelete(undefined);
   };
   
+  const openEditDialog = (habit: Habit) => {
+    setHabitToEdit(habit);
+    setIsEditDialogOpen(true);
+  };
+
+  const openDeleteDialog = (habit: Habit) => {
+    setHabitToDelete(habit);
+    setIsDeleteDialogOpen(true);
+  };
+
   const isHabitCompletedToday = (habit: Habit) => {
     return habit.completed_dates.includes(todayISO);
   };
@@ -126,7 +170,7 @@ export default function Dashboard() {
         }
         return false;
     });
-}, [habits, selectedDate]);
+}, [habits]);
 
 
   const completedTodayCount = habitsForToday.filter(isHabitCompletedToday).length;
@@ -204,7 +248,7 @@ export default function Dashboard() {
         }
       }
     });
-  }, [habits, selectedDate]);
+  }, [habits, selectedDate, isHabitCompletedToday]);
 
 
   const weeklyChartData = useMemo(() => {
@@ -278,8 +322,7 @@ export default function Dashboard() {
     setActiveTab(tab);
   };
 
-  const mainContentTabs = ["today", "progress"];
-  const isDashboardTabActive = mainContentTabs.includes(activeTab) || activeTab === 'dashboard';
+  const isDashboardTabActive = ["today", "progress", "dashboard"].includes(activeTab);
 
   const handleLogout = () => {
     auth.signOut();
@@ -290,11 +333,9 @@ export default function Dashboard() {
       if (Notification.permission === 'default') {
         Notification.requestPermission();
       } else if (Notification.permission === 'denied') {
-        // You might want to guide the user on how to enable notifications in browser settings
         console.log('Notification permission has been denied.');
         alert('You have disabled notifications. To enable them, please go to your browser settings.');
       }
-      // If permission is 'granted', do nothing as it's already enabled.
     }
   };
 
@@ -304,10 +345,10 @@ export default function Dashboard() {
       <div className="hidden border-r bg-card/60 backdrop-blur-xl lg:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-[60px] items-center border-b px-6">
-            <a href="/" className="flex items-center gap-2 font-semibold">
+            <Link href="/" className="flex items-center gap-2 font-semibold">
               <Logo className="h-6 w-6 text-primary" />
               <span className="font-headline">AI Habitual</span>
-            </a>
+            </Link>
             <Button variant="outline" size="icon" className="ml-auto h-8 w-8" onClick={handleNotificationClick}>
               <Bell className="h-4 w-4" />
               <span className="sr-only">Toggle notifications</span>
@@ -315,8 +356,9 @@ export default function Dashboard() {
           </div>
           <div className="flex-1 overflow-auto py-2">
             <nav className="grid items-start px-4 text-sm font-medium">
-              <button
-                onClick={() => handleNavClick('today')}
+              <Link
+                href="/dashboard"
+                onClick={() => handleNavClick('dashboard')}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
                   isDashboardTabActive && "bg-muted text-primary"
@@ -324,9 +366,9 @@ export default function Dashboard() {
               >
                 <LayoutDashboard className="h-4 w-4" />
                 Dashboard
-              </button>
+              </Link>
               <button
-                onClick={() => handleNavClick('achievements')}
+                onClick={() => setActiveTab('achievements')}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
                   activeTab === 'achievements' && "bg-muted text-primary"
@@ -335,13 +377,13 @@ export default function Dashboard() {
                 <Trophy className="h-4 w-4" />
                 Achievements
               </button>
-              <button
-                onClick={() => { alert("Settings not implemented yet.")}}
+              <Link
+                href="/settings"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
                 <Settings className="h-4 w-4" />
                 Settings
-              </button>
+              </Link>
             </nav>
           </div>
         </div>
@@ -353,9 +395,8 @@ export default function Dashboard() {
             <span className="sr-only">Home</span>
           </a>
           <div className="w-full flex-1">
-            {/* Can add a search bar here if needed */}
           </div>
-          <AddHabitDialog onHabitAdd={handleAddHabit}>
+          <AddHabitDialog onHabitSubmit={handleHabitSubmit}>
              <Button size="sm" className="gap-1">
                 <PlusCircle className="h-4 w-4" />
                 New Habit
@@ -378,7 +419,7 @@ export default function Dashboard() {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>{user?.displayName || 'My Account'}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Settings</DropdownMenuItem>
+              <Link href="/settings"><DropdownMenuItem>Settings</DropdownMenuItem></Link>
               <DropdownMenuItem>Support</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
@@ -389,6 +430,26 @@ export default function Dashboard() {
           </DropdownMenu>
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 animate-fade-in-up">
+           <AddHabitDialog onHabitSubmit={handleHabitSubmit} habitToEdit={habitToEdit} open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+             <div/>
+           </AddHabitDialog>
+           <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete your
+                  habit "{habitToDelete?.name}".
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteHabit}>Continue</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatCard title="Current Streak" value={`${streaks.current} Days`} icon={Flame} description={`Longest: ${streaks.longest} days`} />
             <StatCard title="Today's Progress" value={`${completionPercentage}%`} icon={Target} description={`${completedTodayCount} / ${habitsForToday.length} completed`} />
@@ -402,6 +463,7 @@ export default function Dashboard() {
                   <TabsList>
                     <TabsTrigger value="today">Today's Habits</TabsTrigger>
                     <TabsTrigger value="progress">Progress</TabsTrigger>
+                    <TabsTrigger value="achievements">Achievements</TabsTrigger>
                   </TabsList>
                   <TabsContent value="today" className="mt-4">
                     <Card className="glass-card">
@@ -415,7 +477,7 @@ export default function Dashboard() {
                          ) : habitsForToday.length > 0 ? habitsForToday.map(habit => {
                             const Icon = habitIcons[habit.icon] || Target;
                             return (
-                            <div key={habit.id} className={cn("flex items-center gap-4 rounded-lg p-3 transition-colors", isHabitCompletedToday(habit) ? 'bg-primary/20' : 'bg-muted/20')}>
+                            <div key={habit.id} className={cn("flex items-center gap-4 rounded-lg p-3 transition-colors group", isHabitCompletedToday(habit) ? 'bg-primary/20' : 'bg-muted/20')}>
                                <Checkbox 
                                   id={`habit-${habit.id}`} 
                                   checked={isHabitCompletedToday(habit)}
@@ -431,11 +493,28 @@ export default function Dashboard() {
                                  </p>
                                </div>
                                {isHabitCompletedToday(habit) ? <CheckCircle2 className="h-6 w-6 text-green-500" /> : <XCircle className="h-6 w-6 text-muted-foreground/50" />}
+                               <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => openEditDialog(habit)}>
+                                      <Pencil className="mr-2 h-4 w-4" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => openDeleteDialog(habit)} className="text-destructive">
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
                          )}) : (
                           <div className="text-center text-muted-foreground py-8">
                               <p>No habits scheduled for today.</p>
-                              <AddHabitDialog onHabitAdd={handleAddHabit}>
+                              <AddHabitDialog onHabitSubmit={handleHabitSubmit}>
                                   <Button variant="link" className="mt-2">Add a new habit</Button>
                               </AddHabitDialog>
                           </div>
@@ -482,9 +561,15 @@ export default function Dashboard() {
                               </CardHeader>
                               <CardContent className="flex-1 flex items-center justify-center">
                                   <Calendar
-                                    mode="multiple"
-                                    selected={calendarDays}
-                                    onDayClick={(day) => setSelectedDate(day)}
+                                    mode="single"
+                                    selected={selectedDate}
+                                    onSelect={(day) => day && setSelectedDate(day)}
+                                    modifiers={{
+                                      completed: calendarDays
+                                    }}
+                                    modifiersClassNames={{
+                                      completed: "bg-primary/50 text-primary-foreground"
+                                    }}
                                     classNames={{
                                       day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
                                     }}
