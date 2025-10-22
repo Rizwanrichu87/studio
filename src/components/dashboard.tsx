@@ -56,13 +56,15 @@ import {
   ChartTooltip,
   ChartTooltipContent,
   ChartConfig,
+  ChartLegend,
+  ChartLegendContent,
 } from "@/components/ui/chart";
-import { BarChart, Bar, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { BarChart, Bar, CartesianGrid, XAxis, YAxis, LineChart, Line, Legend } from 'recharts';
 import { cn } from "@/lib/utils";
 import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { addDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { collection, doc } from "firebase/firestore";
-import { startOfWeek, endOfWeek, eachDayOfInterval, format, parseISO, isSameDay, getDay, getDate } from 'date-fns';
+import { startOfWeek, endOfWeek, eachDayOfInterval, format, parseISO, isSameDay, getDay, getDate, subDays } from 'date-fns';
 
 export default function Dashboard() {
   const auth = useAuth();
@@ -205,7 +207,7 @@ export default function Dashboard() {
   }, [habits, selectedDate]);
 
 
-  const chartData = useMemo(() => {
+  const weeklyChartData = useMemo(() => {
     const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 }); // Monday
     const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
     const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
@@ -229,12 +231,48 @@ export default function Dashboard() {
     });
 }, [selectedDate, habits]);
 
-  const chartConfig: ChartConfig = {
-    completed: {
-      label: 'Completed',
-      color: 'hsl(var(--primary))',
-    },
-  };
+  const streakChartData = useMemo(() => {
+    if (!habits || habits.length === 0) return [];
+    
+    const days = eachDayOfInterval({ start: subDays(new Date(), 29), end: new Date() });
+    
+    return days.map(day => {
+      const dayData: {[key: string]: any} = {
+        date: format(day, 'MMM d')
+      };
+
+      habits.forEach(habit => {
+        let streak = 0;
+        let checkDate = new Date(day);
+        const completionSet = new Set(habit.completed_dates);
+
+        while(completionSet.has(format(checkDate, 'yyyy-MM-dd'))) {
+          streak++;
+          checkDate = subDays(checkDate, 1);
+        }
+        dayData[habit.name] = streak;
+      });
+
+      return dayData;
+    });
+  }, [habits]);
+
+  const chartConfig: ChartConfig = useMemo(() => {
+    const config: ChartConfig = {
+      completed: {
+        label: 'Completed',
+        color: 'hsl(var(--primary))',
+      },
+    };
+    (habits || []).forEach((habit, index) => {
+        config[habit.name] = {
+            label: habit.name,
+            color: `hsl(var(--chart-${(index % 5) + 1}))`
+        }
+    });
+    return config;
+  }, [habits]);
+
 
   const handleNavClick = (tab: string) => {
     setActiveTab(tab);
@@ -406,52 +444,90 @@ export default function Dashboard() {
                     </Card>
                   </TabsContent>
                   <TabsContent value="progress" className="mt-4">
-                    <div className="grid gap-6 md:grid-cols-2">
-                        <Card className="glass-card">
+                    <div className="grid gap-6">
+                      <div className="grid gap-6 md:grid-cols-2">
+                          <Card className="glass-card">
+                            <CardHeader>
+                              <CardTitle>Weekly Report</CardTitle>
+                               <CardDescription>Habits completed in the selected week.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                               <ChartContainer config={chartConfig} className="h-[200px] w-full">
+                                    <BarChart data={weeklyChartData} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
+                                      <CartesianGrid vertical={false} stroke="hsl(var(--border) / 0.5)" />
+                                      <XAxis
+                                        dataKey="date"
+                                        tickLine={false}
+                                        axisLine={false}
+                                        tickMargin={8}
+                                      />
+                                      <YAxis allowDecimals={false} />
+                                      <ChartTooltip
+                                        cursor={false}
+                                        content={<ChartTooltipContent />}
+                                      />
+                                      <Bar
+                                        dataKey="completed"
+                                        fill="var(--color-completed)"
+                                        radius={4}
+                                      />
+                                    </BarChart>
+                                  </ChartContainer>
+                            </CardContent>
+                          </Card>
+                          <Card className="flex flex-col glass-card">
+                             <CardHeader>
+                                <CardTitle>Completion Calendar</CardTitle>
+                                <CardDescription>Your activity overview. Click a day to see the weekly report.</CardDescription>
+                              </CardHeader>
+                              <CardContent className="flex-1 flex items-center justify-center">
+                                  <Calendar
+                                    mode="multiple"
+                                    selected={calendarDays}
+                                    onDayClick={(day) => setSelectedDate(day)}
+                                    classNames={{
+                                      day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
+                                    }}
+                                    className="p-0"
+                                  />
+                              </CardContent>
+                          </Card>
+                      </div>
+                      <Card className="glass-card">
                           <CardHeader>
-                            <CardTitle>Weekly Report</CardTitle>
-                             <CardDescription>Habits completed in the selected week.</CardDescription>
+                            <CardTitle>Streak Progression</CardTitle>
+                             <CardDescription>30-day streak overview for each habit.</CardDescription>
                           </CardHeader>
                           <CardContent>
-                             <ChartContainer config={chartConfig} className="h-[200px] w-full">
-                                  <BarChart data={chartData} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
+                             <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                                  <LineChart data={streakChartData} margin={{ top: 20, right: 50, bottom: 5, left: 0 }}>
                                     <CartesianGrid vertical={false} stroke="hsl(var(--border) / 0.5)" />
                                     <XAxis
                                       dataKey="date"
                                       tickLine={false}
                                       axisLine={false}
                                       tickMargin={8}
+                                      tickFormatter={(value) => value.slice(0, 3)}
                                     />
                                     <YAxis allowDecimals={false} />
                                     <ChartTooltip
                                       cursor={false}
                                       content={<ChartTooltipContent />}
                                     />
-                                    <Bar
-                                      dataKey="completed"
-                                      fill="var(--color-completed)"
-                                      radius={4}
-                                    />
-                                  </BarChart>
+                                    <ChartLegend content={<ChartLegendContent />} />
+                                    {(habits || []).map((habit, index) => (
+                                       <Line
+                                          key={habit.id}
+                                          dataKey={habit.name}
+                                          type="monotone"
+                                          stroke={`hsl(var(--chart-${(index % 5) + 1}))`}
+                                          strokeWidth={2}
+                                          dot={false}
+                                        />
+                                    ))}
+                                  </LineChart>
                                 </ChartContainer>
                           </CardContent>
-                        </Card>
-                        <Card className="flex flex-col glass-card">
-                           <CardHeader>
-                              <CardTitle>Completion Calendar</CardTitle>
-                              <CardDescription>Your activity overview. Click a day to see the weekly report.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex-1 flex items-center justify-center">
-                                <Calendar
-                                  mode="multiple"
-                                  selected={calendarDays}
-                                  onDayClick={(day) => setSelectedDate(day)}
-                                  classNames={{
-                                    day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
-                                  }}
-                                  className="p-0"
-                                />
-                            </CardContent>
                         </Card>
                     </div>
                   </TabsContent>
