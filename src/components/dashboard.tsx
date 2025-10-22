@@ -66,6 +66,13 @@ import {
 import { Progress } from "./ui/progress";
 import { AppLayout } from "./app-layout";
 import { useRouter } from "next/navigation";
+import { Button } from "./ui/button";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function Dashboard() {
   const auth = useAuth();
