@@ -191,7 +191,7 @@ export default function Dashboard() {
     let currentStreak = 0;
 
     if (habits && habits.length > 0) {
-        const allCompletionDates = new Set(habits.flatMap(h => Object.keys(h.completions)));
+        const allCompletionDates = new Set(habits.flatMap(h => h.completions ? Object.keys(h.completions) : []));
         const sortedDates = Array.from(allCompletionDates).sort();
 
         if (sortedDates.length > 0) {
@@ -231,7 +231,7 @@ export default function Dashboard() {
 
   const calendarDays = useMemo(() => {
     if (!habits) return [];
-    const allDates = habits.flatMap(h => Object.keys(h.completions).map(d => parseISO(d)));
+    const allDates = habits.flatMap(h => h.completions ? Object.keys(h.completions).map(d => parseISO(d)) : []);
     return allDates;
   }, [habits]);
   
@@ -460,7 +460,7 @@ export default function Dashboard() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatCard title="Current Streak" value={`${streaks.current} Days`} icon={Flame} description={`Longest: ${streaks.longest} days`} />
             <StatCard title="Today's Progress" value={`${completionPercentage}%`} icon={Target} description={`${completedTodayCount} / ${totalTodayTarget} completed`} />
-            <StatCard title="Completed Habits" value={(habits || []).reduce((acc, h) => acc + Object.values(h.completions).reduce((a, b) => a + b, 0), 0)} icon={CheckCircle2} description="All time" />
+            <StatCard title="Completed Habits" value={(habits || []).reduce((acc, h) => acc + Object.values(h.completions || {}).reduce((a, b) => a + b, 0), 0)} icon={CheckCircle2} description="All time" />
             <StatCard title="Achievements" value={`${achievements.filter(a => a.unlocked).length} / ${achievements.length}`} icon={Trophy} description="Unlocked" />
           </div>
 
