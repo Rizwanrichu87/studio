@@ -1,0 +1,67 @@
+/**
+ * @fileoverview Firestore Security Rules for the AI Habitual application.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model for all user data.
+ * Only the authenticated user can read or write their own data.
+ *
+ * Data Structure:
+ * All user data is stored under the `/users/{userId}` path, where `{userId}`
+ * corresponds to the Firebase Authentication UID.
+ *
+ * Key Security Decisions:
+ * - User listing is disallowed to protect user privacy.
+ * - Data consistency between the path and the document's internal `id` field is enforced.
+ * - No schema validation is performed beyond authorization-critical fields, to allow for rapid iteration.
+ *
+ * Denormalization for Authorization:
+ * The `/users/{userId}` document's `id` field is used to ensure that the document ID
+ * matches the authenticated user's UID. This avoids needing to perform queries
+ * to determine ownership.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Controls access to user profile data.
+     * @path /users/{userId}
+     * @allow (create) User with matching UID can create their profile.
+     * @allow (get, update, delete) User with matching UID can read, update, or delete their profile.
+     * @deny (create) User cannot create a profile with a mismatched UID.
+     * @deny (get, list, update, delete) User cannot access another user's profile.
+     * @principle Enforces document ownership for all operations.
+     */
+    match /users/{userId} {
+      // Function to check if the user is signed in
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      // Function to check if the requested userId matches the authenticated user's uid
+      function isOwner(userId) {
+        return isSignedIn() && request.auth.uid == userId;
+      }
+
+      // Function to check if the user is an existing owner of the document
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      // Allow a user to create their own document if the userId matches their auth uid and the document's id field matches their auth uid.
+      allow create: if isOwner(userId) && request.resource.data.id == request.auth.uid;
+
+      // Allow a user to get their own document
+      allow get: if isOwner(userId);
+
+      // Disallow listing users
+      allow list: if false;
+
+      // Allow a user to update their own document, and enforce immutability of the id field.
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+
+      // Allow a user to delete their own document
+      allow delete: if isExistingOwner(userId);
+    }
+  }
+}

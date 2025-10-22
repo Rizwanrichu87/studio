@@ -1,0 +1,63 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user account for the AI Habitual application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user entity."
+        },
+        "username": {
+          "type": "string",
+          "description": "The user's username, used for login."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address.",
+          "format": "email"
+        },
+        "registrationDate": {
+          "type": "string",
+          "description": "The date and time when the user registered.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "username",
+        "email",
+        "registrationDate"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user account information.  Authorization is based on the path `/users/{userId}`, where `userId` must match `request.auth.uid`.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, corresponding to the Firebase Authentication UID."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to manage user accounts for the AI Habitual application, focusing on secure and efficient data access.  The primary collection is `/users/{userId}`, which stores user profile data. This design emphasizes path-based ownership, providing strong security guarantees and simplifying security rules. By storing each user's data in a dedicated document, authorization rules can be based solely on the `request.auth.uid` matching the `userId` parameter in the path, ensuring that only the authenticated user can access their data. This strategy achieves authorization independence, avoiding the need for complex `get()` calls in security rules and enabling atomic operations. The `/users/{userId}` collection supports the required QAPs (Queries are Permissions): List operations are inherently secure because each user's data is isolated within their own document."
+  }
+}
