@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -251,47 +252,49 @@ export default function SettingsPage() {
           </DropdownMenu>
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 animate-fade-in-up">
-           <Card className="glass-card">
-              <CardHeader>
-                <CardTitle>Manage Habits</CardTitle>
-                <CardDescription>Edit or delete your existing habits.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                 {isLoadingHabits ? (
-                   <p>Loading habits...</p>
-                 ) : habits && habits.length > 0 ? habits.map(habit => {
-                    const Icon = habitIcons[habit.icon] || Settings;
-                    return (
-                    <div key={habit.id} className="flex items-center gap-4 rounded-lg p-3 transition-colors bg-muted/20">
-                       <Icon className="h-6 w-6 text-primary" />
-                       <div className="grid gap-1 flex-1">
-                         <p className="font-semibold">{habit.name}</p>
-                         <p className="text-sm text-muted-foreground flex items-center gap-2">
-                           <span>{habit.frequency.charAt(0).toUpperCase() + habit.frequency.slice(1)}</span>
-                           {habit.reminderTime && <><span className="text-xs">&bull;</span> <Bell className="h-4 w-4" /> {habit.reminderTime}</>}
-                         </p>
-                       </div>
-                       <div className="flex gap-2">
-                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => openEditDialog(habit)}>
-                            <Pencil className="h-4 w-4" />
-                            <span className="sr-only">Edit</span>
-                        </Button>
-                        <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => openDeleteDialog(habit)}>
-                            <Trash2 className="h-4 w-4" />
-                             <span className="sr-only">Delete</span>
-                        </Button>
-                       </div>
+           <div className="flex justify-center">
+            <Card className="glass-card w-full max-w-2xl">
+                <CardHeader>
+                  <CardTitle>Manage Habits</CardTitle>
+                  <CardDescription>Edit or delete your existing habits.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {isLoadingHabits ? (
+                    <p>Loading habits...</p>
+                  ) : habits && habits.length > 0 ? habits.map(habit => {
+                      const Icon = habitIcons[habit.icon] || Settings;
+                      return (
+                      <div key={habit.id} className="flex items-center gap-4 rounded-lg p-3 transition-colors bg-muted/20">
+                        <Icon className="h-6 w-6 text-primary" />
+                        <div className="grid gap-1 flex-1">
+                          <p className="font-semibold">{habit.name}</p>
+                          <p className="text-sm text-muted-foreground flex items-center gap-2">
+                            <span>{habit.frequency.charAt(0).toUpperCase() + habit.frequency.slice(1)}</span>
+                            {habit.reminderTime && <><span className="text-xs">&bull;</span> <Bell className="h-4 w-4" /> {habit.reminderTime}</>}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => openEditDialog(habit)}>
+                              <Pencil className="h-4 w-4" />
+                              <span className="sr-only">Edit</span>
+                          </Button>
+                          <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => openDeleteDialog(habit)}>
+                              <Trash2 className="h-4 w-4" />
+                              <span className="sr-only">Delete</span>
+                          </Button>
+                        </div>
+                      </div>
+                  )}) : (
+                    <div className="text-center text-muted-foreground py-8">
+                        <p>You haven't added any habits yet.</p>
+                        <AddHabitDialog onHabitSubmit={handleHabitSubmit}>
+                            <Button variant="link" className="mt-2">Add a new habit</Button>
+                        </AddHabitDialog>
                     </div>
-                 )}) : (
-                  <div className="text-center text-muted-foreground py-8">
-                      <p>You haven't added any habits yet.</p>
-                       <AddHabitDialog onHabitSubmit={handleHabitSubmit}>
-                           <Button variant="link" className="mt-2">Add a new habit</Button>
-                      </AddHabitDialog>
-                  </div>
-                 )}
-              </CardContent>
-            </Card>
+                  )}
+                </CardContent>
+              </Card>
+           </div>
         </main>
       </div>
     </div>
