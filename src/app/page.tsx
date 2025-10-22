@@ -20,7 +20,7 @@ export default function Home() {
   }, [user, isUserLoading, router]);
 
   return (
-    <main className="flex h-screen w-full items-center justify-center bg-background">
+    <main className="flex h-screen w-full items-center justify-center bg-transparent">
       <Loader2 className="h-12 w-12 animate-spin text-primary" />
     </main>
   );

@@ -18,7 +18,7 @@ export default function DashboardPage() {
 
   if (isUserLoading || !user) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
+      <div className="flex h-screen w-full items-center justify-center bg-transparent">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );

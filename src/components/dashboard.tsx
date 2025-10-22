@@ -250,7 +250,7 @@ export default function Dashboard() {
 
   return (
     <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
-      <div className="hidden border-r bg-card lg:block">
+      <div className="hidden border-r bg-card/60 backdrop-blur-xl lg:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-[60px] items-center border-b px-6">
             <a href="/" className="flex items-center gap-2 font-semibold">
@@ -295,8 +295,8 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-      <div className="flex flex-col">
-        <header className="flex h-14 lg:h-[60px] items-center gap-4 border-b bg-card px-6">
+      <div className="flex flex-col bg-transparent">
+        <header className="flex h-14 lg:h-[60px] items-center gap-4 border-b bg-card/60 backdrop-blur-xl px-6 sticky top-0 z-20">
           <a href="#" className="lg:hidden">
             <Logo className="h-6 w-6 text-primary" />
             <span className="sr-only">Home</span>
@@ -353,7 +353,7 @@ export default function Dashboard() {
                     <TabsTrigger value="progress">Progress</TabsTrigger>
                   </TabsList>
                   <TabsContent value="today" className="mt-4">
-                    <Card>
+                    <Card className="glass-card">
                       <CardHeader>
                         <CardTitle>What will you accomplish today?</CardTitle>
                         <CardDescription>Check off your habits as you complete them.</CardDescription>
@@ -364,7 +364,7 @@ export default function Dashboard() {
                          ) : habitsForToday.length > 0 ? habitsForToday.map(habit => {
                             const Icon = habitIcons[habit.icon] || Target;
                             return (
-                            <div key={habit.id} className={cn("flex items-center gap-4 rounded-lg p-3 transition-colors", isHabitCompletedToday(habit) ? 'bg-accent/20' : 'bg-muted/20')}>
+                            <div key={habit.id} className={cn("flex items-center gap-4 rounded-lg p-3 transition-colors", isHabitCompletedToday(habit) ? 'bg-primary/20' : 'bg-muted/20')}>
                                <Checkbox 
                                   id={`habit-${habit.id}`} 
                                   checked={isHabitCompletedToday(habit)}
@@ -394,7 +394,7 @@ export default function Dashboard() {
                   </TabsContent>
                   <TabsContent value="progress" className="mt-4">
                     <div className="grid gap-6 md:grid-cols-2">
-                        <Card>
+                        <Card className="glass-card">
                           <CardHeader>
                             <CardTitle>Weekly Report</CardTitle>
                              <CardDescription>Habits completed in the selected week.</CardDescription>
@@ -402,7 +402,7 @@ export default function Dashboard() {
                           <CardContent>
                              <ChartContainer config={chartConfig} className="h-[200px] w-full">
                                   <BarChart data={chartData} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
-                                    <CartesianGrid vertical={false} />
+                                    <CartesianGrid vertical={false} stroke="hsl(var(--border) / 0.5)" />
                                     <XAxis
                                       dataKey="date"
                                       tickLine={false}
@@ -423,7 +423,7 @@ export default function Dashboard() {
                                 </ChartContainer>
                           </CardContent>
                         </Card>
-                        <Card className="flex flex-col">
+                        <Card className="flex flex-col glass-card">
                            <CardHeader>
                               <CardTitle>Completion Calendar</CardTitle>
                               <CardDescription>Your activity overview. Click a day to see the weekly report.</CardDescription>
@@ -443,14 +443,14 @@ export default function Dashboard() {
                     </div>
                   </TabsContent>
                   <TabsContent value="achievements" className="mt-4">
-                    <Card>
+                    <Card className="glass-card">
                         <CardHeader>
                           <CardTitle>Your Achievements</CardTitle>
                           <CardDescription>Celebrate your progress and milestones.</CardDescription>
                         </CardHeader>
                         <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                           {achievements.map(ach => (
-                            <Card key={ach.id} className={cn("p-4 flex items-start gap-4", !ach.unlocked && "opacity-50 bg-muted/30")}>
+                            <Card key={ach.id} className={cn("p-4 flex items-start gap-4 glass-card", !ach.unlocked && "opacity-50 bg-muted/30")}>
                                 <div className={cn("p-3 rounded-full", ach.unlocked ? "bg-primary/10 text-primary" : "bg-muted-foreground/10 text-muted-foreground")}>
                                   <ach.icon className="h-6 w-6"/>
                                 </div>

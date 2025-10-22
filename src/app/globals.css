@@ -4,27 +4,37 @@
 
 @layer base {
   :root {
-    --background: 240 10% 11%; /* Deep indigo */
+    --background: 240 10% 3.9%;
     --foreground: 210 40% 98%;
-    --card: 240 10% 16%; /* Slightly lighter card background */
+    
+    --card: 240 10% 10% / 0.6; /* Semi-transparent white */
     --card-foreground: 210 40% 98%;
-    --popover: 240 10% 11%;
+
+    --popover: 240 10% 3.9%;
     --popover-foreground: 210 40% 98%;
+    
     --primary: 310 90% 65%; /* Vibrant magenta/pink */
-    --primary-foreground: 240 10% 11%;
+    --primary-foreground: 210 40% 98%;
+
     --secondary: 180 90% 45%; /* Bright cyan */
     --secondary-foreground: 210 40% 98%;
-    --muted: 240 5% 26%;
-    --muted-foreground: 240 5% 65%;
-    --accent: 180 90% 45%; /* Cyan for accents */
+    
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 210 40% 98%;
+    
+    --accent: 240 3.7% 15.9%;
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5% 30%;
-    --input: 240 5% 30%;
+    
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
     --ring: 310 90% 65%;
+
     --radius: 0.5rem;
-    --chart-1: 310 90% 65%; /* Magenta */
+
+     --chart-1: 310 90% 65%; /* Magenta */
     --chart-2: 180 90% 45%; /* Cyan */
     --chart-3: 43 95% 66%;  /* Gold */
     --chart-4: 260 95% 75%; /* Lavender */
@@ -32,30 +42,33 @@
   }
 
   .dark {
-    --background: 240 10% 11%; /* Deep indigo */
+    --background: 240 10% 3.9%;
     --foreground: 210 40% 98%;
-    --card: 240 10% 16%; /* Slightly lighter card background */
+    
+    --card: 240 10% 10% / 0.6; /* Semi-transparent white */
     --card-foreground: 210 40% 98%;
-    --popover: 240 10% 11%;
+
+    --popover: 240 10% 3.9%;
     --popover-foreground: 210 40% 98%;
+    
     --primary: 310 90% 65%; /* Vibrant magenta/pink */
-    --primary-foreground: 240 10% 11%;
+    --primary-foreground: 210 40% 98%;
+
     --secondary: 180 90% 45%; /* Bright cyan */
     --secondary-foreground: 210 40% 98%;
-    --muted: 240 5% 26%;
-    --muted-foreground: 240 5% 65%;
-    --accent: 180 90% 45%; /* Cyan for accents */
+    
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 210 40% 98%;
+    
+    --accent: 240 3.7% 15.9%;
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5% 30%;
-    --input: 240 5% 30%;
+    
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
     --ring: 310 90% 65%;
-    --chart-1: 310 90% 65%; /* Magenta */
-    --chart-2: 180 90% 45%; /* Cyan */
-    --chart-3: 43 95% 66%;  /* Gold */
-    --chart-4: 260 95% 75%; /* Lavender */
-    --chart-5: 130 80% 60%; /* Lime Green */
   }
 }
 
@@ -65,5 +78,11 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-card/60 backdrop-blur-xl border border-white/10 shadow-lg;
   }
 }
