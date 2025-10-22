@@ -44,11 +44,10 @@ import Logo from "./logo";
 import { StatCard } from "./stat-card";
 import {
   mockAchievements,
-  mockProgressData,
   habitIcons,
 } from "@/lib/data";
 import { useState, useMemo, useEffect } from "react";
-import type { Habit, Achievement } from "@/lib/types";
+import type { Habit, Achievement, ProgressData } from "@/lib/types";
 import { AddHabitDialog } from "./add-habit-dialog";
 import { AIHelper } from "./ai-helper";
 import { Calendar } from "./ui/calendar";
@@ -61,8 +60,9 @@ import {
 import { BarChart, Bar, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { cn } from "@/lib/utils";
 import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
-import { collection, doc, where } from "firebase/firestore";
+import { addDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { collection, doc } from "firebase/firestore";
+import { startOfWeek, endOfWeek, eachDayOfInterval, format, parseISO, isSameDay } from 'date-fns';
 
 export default function Dashboard() {
   const auth = useAuth();
@@ -77,10 +77,10 @@ export default function Dashboard() {
   const { data: habits = [], isLoading: isLoadingHabits } = useCollection<Habit>(habitsQuery);
 
   const [achievements, setAchievements] = useState<Achievement[]>(mockAchievements);
-  const [today, setToday] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [activeTab, setActiveTab] = useState("today");
 
-  const todayISO = today.toISOString().split("T")[0];
+  const todayISO = selectedDate.toISOString().split("T")[0];
 
   const toggleHabitCompletion = (habitId: string, completed: boolean) => {
     const habit = habits.find(h => h.id === habitId);
@@ -112,8 +112,8 @@ export default function Dashboard() {
   };
   
   const habitsForToday = useMemo(() => {
-    const dayOfWeek = today.getDay(); // Sunday - 0, ...
-    const date = today.getDate();
+    const dayOfWeek = selectedDate.getDay(); // Sunday - 0, ...
+    const date = selectedDate.getDate();
 
     return (habits || []).filter(habit => {
       if (habit.frequency === 'daily') return true;
@@ -121,7 +121,7 @@ export default function Dashboard() {
       if (habit.frequency === 'monthly' && date === 1) return true; // Assuming monthly habits are on the 1st
       return false;
     });
-  }, [habits, today]);
+  }, [habits, selectedDate]);
 
   const completedTodayCount = habitsForToday.filter(isHabitCompletedToday).length;
   const completionPercentage = habitsForToday.length > 0 ? Math.round((completedTodayCount / habitsForToday.length) * 100) : 0;
@@ -141,28 +141,14 @@ export default function Dashboard() {
             
             // Check for current streak
             let tempCurrentStreak = 0;
-            const todayStr = new Date().toISOString().split('T')[0];
             let checkDate = new Date();
+            if (!allCompletionDates.has(checkDate.toISOString().split('T')[0])) {
+              checkDate.setDate(checkDate.getDate() - 1);
+            }
 
-            if (allCompletionDates.has(todayStr)) {
-                tempCurrentStreak = 1;
+            while(allCompletionDates.has(checkDate.toISOString().split('T')[0])) {
+                tempCurrentStreak++;
                 checkDate.setDate(checkDate.getDate() - 1);
-                while(allCompletionDates.has(checkDate.toISOString().split('T')[0])) {
-                    tempCurrentStreak++;
-                    checkDate.setDate(checkDate.getDate() - 1);
-                }
-            } else {
-                 const yesterday = new Date();
-                 yesterday.setDate(yesterday.getDate() - 1);
-                 if (allCompletionDates.has(yesterday.toISOString().split('T')[0])) {
-                    checkDate = yesterday;
-                    tempCurrentStreak = 1;
-                    checkDate.setDate(checkDate.getDate() - 1);
-                    while(allCompletionDates.has(checkDate.toISOString().split('T')[0])) {
-                        tempCurrentStreak++;
-                        checkDate.setDate(checkDate.getDate() - 1);
-                    }
-                 }
             }
             currentStreak = tempCurrentStreak;
             
@@ -182,6 +168,12 @@ export default function Dashboard() {
         }
     }
     return { current: currentStreak, longest: longestStreak };
+  }, [habits]);
+
+  const calendarDays = useMemo(() => {
+    if (!habits) return [];
+    const allDates = habits.flatMap(h => h.completed_dates.map(d => parseISO(d)));
+    return allDates;
   }, [habits]);
   
   // UseEffect for notifications
@@ -211,13 +203,32 @@ export default function Dashboard() {
         }
       }
     });
-  }, [habits, today]);
+  }, [habits, selectedDate]);
 
 
-  const chartData = mockProgressData.slice(-7).map(d => ({
-    date: new Date(d.date).toLocaleDateString('en-US', { weekday: 'short' }),
-    completed: d.completed,
-  }));
+  const chartData = useMemo(() => {
+    const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 }); // Monday
+    const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
+    const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
+
+    if (!habits) return [];
+
+    return weekDays.map(day => {
+        const dateString = format(day, 'yyyy-MM-dd');
+        let completedCount = 0;
+        
+        habits.forEach(habit => {
+            if (habit.completed_dates.includes(dateString)) {
+                completedCount++;
+            }
+        });
+
+        return {
+            date: format(day, 'EEE'), // Short day name e.g., "Mon"
+            completed: completedCount,
+        };
+    });
+}, [selectedDate, habits]);
 
   const chartConfig: ChartConfig = {
     completed: {
@@ -340,7 +351,6 @@ export default function Dashboard() {
                   <TabsList>
                     <TabsTrigger value="today">Today's Habits</TabsTrigger>
                     <TabsTrigger value="progress">Progress</TabsTrigger>
-                    <TabsTrigger value="achievements">Achievements</TabsTrigger>
                   </TabsList>
                   <TabsContent value="today" className="mt-4">
                     <Card>
@@ -387,7 +397,7 @@ export default function Dashboard() {
                         <Card>
                           <CardHeader>
                             <CardTitle>Weekly Report</CardTitle>
-                             <CardDescription>Habits completed in the last 7 days.</CardDescription>
+                             <CardDescription>Habits completed in the selected week.</CardDescription>
                           </CardHeader>
                           <CardContent>
                              <ChartContainer config={chartConfig} className="h-[200px] w-full">
@@ -399,7 +409,7 @@ export default function Dashboard() {
                                       axisLine={false}
                                       tickMargin={8}
                                     />
-                                    <YAxis />
+                                    <YAxis allowDecimals={false} />
                                     <ChartTooltip
                                       cursor={false}
                                       content={<ChartTooltipContent />}
@@ -416,13 +426,13 @@ export default function Dashboard() {
                         <Card className="flex flex-col">
                            <CardHeader>
                               <CardTitle>Completion Calendar</CardTitle>
-                              <CardDescription>Your activity overview.</CardDescription>
+                              <CardDescription>Your activity overview. Click a day to see the weekly report.</CardDescription>
                             </CardHeader>
                             <CardContent className="flex-1 flex items-center justify-center">
                                 <Calendar
                                   mode="multiple"
-                                  selected={mockProgressData.filter(d => d.completed > 0).map(d => new Date(d.date))}
-                                  onDayClick={(day) => setToday(day)}
+                                  selected={calendarDays}
+                                  onDayClick={(day) => setSelectedDate(day)}
                                   classNames={{
                                     day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
                                   }}
