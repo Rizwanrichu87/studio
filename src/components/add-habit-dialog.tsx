@@ -45,11 +45,12 @@ const formSchema = z.object({
   frequency: z.enum(["daily", "weekly", "monthly"]),
   reminderTime: z.string().optional(),
   icon: z.string(),
+  targetCompletions: z.coerce.number().min(1).optional(),
 });
 
 interface AddHabitDialogProps {
   children: React.ReactNode;
-  onHabitSubmit: (habit: Omit<Habit, 'id' | 'completed_dates'>) => void;
+  onHabitSubmit: (habit: Omit<Habit, 'id' | 'completions'>) => void;
   habitToEdit?: Habit;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -65,34 +66,34 @@ export function AddHabitDialog({ children, onHabitSubmit, habitToEdit, open: con
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: isEditMode ? {
-      name: habitToEdit.name,
-      frequency: habitToEdit.frequency,
-      reminderTime: habitToEdit.reminderTime || "",
-      icon: habitToEdit.icon,
-    } : {
+    defaultValues: {
       name: "",
       frequency: "daily",
       reminderTime: "",
       icon: "Target",
+      targetCompletions: 1,
     },
   });
 
   useEffect(() => {
-    if (isEditMode && habitToEdit) {
-      form.reset({
-        name: habitToEdit.name,
-        frequency: habitToEdit.frequency,
-        reminderTime: habitToEdit.reminderTime || "",
-        icon: habitToEdit.icon,
-      });
-    } else {
+    if (open) {
+      if (isEditMode && habitToEdit) {
         form.reset({
-            name: "",
-            frequency: "daily",
-            reminderTime: "",
-            icon: "Target",
+          name: habitToEdit.name,
+          frequency: habitToEdit.frequency,
+          reminderTime: habitToEdit.reminderTime || "",
+          icon: habitToEdit.icon,
+          targetCompletions: habitToEdit.targetCompletions || 1,
         });
+      } else {
+        form.reset({
+          name: "",
+          frequency: "daily",
+          reminderTime: "",
+          icon: "Target",
+          targetCompletions: 1,
+        });
+      }
     }
   }, [habitToEdit, isEditMode, form, open]);
 
@@ -101,6 +102,7 @@ export function AddHabitDialog({ children, onHabitSubmit, habitToEdit, open: con
     onHabitSubmit({
         ...values,
         icon: values.icon as keyof typeof habitIcons,
+        targetCompletions: values.targetCompletions || 1,
     });
     toast({
       title: isEditMode ? "Habit Updated" : "Habit Added",
@@ -187,6 +189,19 @@ export function AddHabitDialog({ children, onHabitSubmit, habitToEdit, open: con
                           );
                         })}
                       </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="targetCompletions"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Daily Target (optional)</FormLabel>
+                    <FormControl>
+                      <Input type="number" min="1" placeholder="e.g., 5" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

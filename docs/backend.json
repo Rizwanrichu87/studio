@@ -51,15 +51,19 @@
         "icon": {
           "type": "string"
         },
-        "completed_dates": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "format": "date"
+        "completions": {
+          "type": "object",
+          "description": "A map where keys are date strings (e.g., '2024-05-21') and values are the number of times the habit was completed on that day.",
+          "additionalProperties": {
+            "type": "number"
           }
+        },
+        "targetCompletions": {
+            "type": "number",
+            "description": "How many times per day a habit should be completed. Defaults to 1 if not set."
         }
       },
-      "required": ["name", "frequency", "icon", "completed_dates"]
+      "required": ["name", "frequency", "icon", "completions"]
     }
   },
   "auth": {

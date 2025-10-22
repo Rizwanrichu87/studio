@@ -83,7 +83,7 @@ export default function SettingsPage() {
   const [habitToDelete, setHabitToDelete] = useState<Habit | undefined>(undefined);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  const handleHabitSubmit = (submittedHabit: Omit<Habit, 'id' | 'completed_dates'>) => {
+  const handleHabitSubmit = (submittedHabit: Omit<Habit, 'id' | 'completions'>) => {
     if (!user) return;
     if (habitToEdit) {
       // Update existing habit
@@ -94,7 +94,7 @@ export default function SettingsPage() {
       const collectionRef = collection(firestore, 'users', user.uid, 'habits');
       addDocumentNonBlocking(collectionRef, {
         ...submittedHabit,
-        completed_dates: [],
+        completions: {},
       });
     }
   };

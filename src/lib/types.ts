@@ -5,9 +5,14 @@ export type Habit = {
   id: string;
   name: string;
   frequency: "daily" | "weekly" | "monthly";
-  completed_dates: string[]; // Store dates as ISO strings e.g. "2024-05-21"
+  /**
+   * A map where keys are date strings (e.g., "2024-05-21") and
+   * values are the number of times the habit was completed on that day.
+   */
+  completions: { [date: string]: number };
   reminderTime?: string;
   icon: keyof typeof habitIcons;
+  targetCompletions?: number; // Optional: how many times per day
 };
 
 export type User = {

@@ -42,7 +42,7 @@ export function AIHelper({ habits, streaks }: AIHelperProps) {
     setIsLoading(prev => ({ ...prev, motivation: true }));
     setMotivation(null);
     try {
-      const habitsCompleted = habits.reduce((acc, h) => acc + h.completed_dates.length, 0);
+      const habitsCompleted = habits.reduce((acc, h) => acc + Object.values(h.completions).reduce((a, b) => a + b, 0), 0);
       const missedDays = 5; // Mock data
       const averageCompletionRate = 75; // Mock data
 
@@ -70,7 +70,7 @@ export function AIHelper({ habits, streaks }: AIHelperProps) {
     setIsLoading(prev => ({ ...prev, recommendation: true }));
     setRecommendation(null);
     try {
-      const habitTrackingData = JSON.stringify(habits.map(h => ({ name: h.name, completions: h.completed_dates.length })));
+      const habitTrackingData = JSON.stringify(habits.map(h => ({ name: h.name, completions: h.completions })));
       const result = await getPersonalizedHabitRecommendations({ habitTrackingData, userGoals });
       setRecommendation(result);
     } catch (error) {
@@ -89,9 +89,12 @@ export function AIHelper({ habits, streaks }: AIHelperProps) {
     setIsLoading(prev => ({ ...prev, prediction: true }));
     setSuccessPrediction(null);
     try {
+      const totalCompletions = habits.reduce((acc, h) => acc + Object.values(h.completions).reduce((a, b) => a + b, 0), 0);
+      const totalTargets = habits.reduce((acc, h) => acc + (Object.keys(h.completions).length * (h.targetCompletions || 1)), 0);
+
       const habitTrackingData = JSON.stringify({
         streaks,
-        completionRate: habits.length > 0 ? (habits.filter(h => h.completed_dates.length > 0).length / habits.length) * 100 : 0,
+        completionRate: totalTargets > 0 ? (totalCompletions / totalTargets) * 100 : 0,
       });
       const result = await predictSuccess({ habitTrackingData, userGoals });
       setSuccessPrediction(result);

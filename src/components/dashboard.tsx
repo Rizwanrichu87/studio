@@ -21,7 +21,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Tabs,
   TabsContent,
@@ -38,10 +37,11 @@ import {
   Settings,
   Target,
   Trophy,
-  XCircle,
   MoreVertical,
   Pencil,
   Trash2,
+  Plus,
+  Minus,
 } from "lucide-react";
 import Logo from "./logo";
 import { StatCard } from "./stat-card";
@@ -79,6 +79,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Progress } from "./ui/progress";
 
 export default function Dashboard() {
   const auth = useAuth();
@@ -103,23 +104,23 @@ export default function Dashboard() {
 
   const todayISO = selectedDate.toISOString().split("T")[0];
 
-  const toggleHabitCompletion = (habitId: string, completed: boolean) => {
+  const updateHabitCompletion = (habitId: string, count: number) => {
     const habit = habits.find(h => h.id === habitId);
     if (!habit || !user) return;
 
     const docRef = doc(firestore, 'users', user.uid, 'habits', habitId);
-    const newCompletedDates = new Set(habit.completed_dates);
+    const newCompletions = { ...habit.completions };
 
-    if (completed) {
-      newCompletedDates.add(todayISO);
+    if (count > 0) {
+      newCompletions[todayISO] = count;
     } else {
-      newCompletedDates.delete(todayISO);
+      delete newCompletions[todayISO];
     }
 
-    updateDocumentNonBlocking(docRef, { completed_dates: Array.from(newCompletedDates) });
+    updateDocumentNonBlocking(docRef, { completions: newCompletions });
   };
   
-  const handleHabitSubmit = (submittedHabit: Omit<Habit, 'id' | 'completed_dates'>) => {
+  const handleHabitSubmit = (submittedHabit: Omit<Habit, 'id' | 'completions'>) => {
     if (!user) return;
     if (habitToEdit) {
       // Update existing habit
@@ -130,7 +131,7 @@ export default function Dashboard() {
       const collectionRef = collection(firestore, 'users', user.uid, 'habits');
       addDocumentNonBlocking(collectionRef, {
         ...submittedHabit,
-        completed_dates: [],
+        completions: {},
       });
     }
   };
@@ -153,8 +154,8 @@ export default function Dashboard() {
     setIsDeleteDialogOpen(true);
   };
 
-  const isHabitCompletedToday = (habit: Habit) => {
-    return habit.completed_dates.includes(todayISO);
+  const getCompletionCount = (habit: Habit, date: string) => {
+    return habit.completions?.[date] || 0;
   };
   
   const habitsForToday = useMemo(() => {
@@ -172,9 +173,17 @@ export default function Dashboard() {
     });
 }, [habits]);
 
+  const { completedTodayCount, totalTodayTarget } = useMemo(() => {
+    let completed = 0;
+    let total = 0;
+    habitsForToday.forEach(habit => {
+      completed += getCompletionCount(habit, todayISO);
+      total += habit.targetCompletions || 1;
+    });
+    return { completedTodayCount: completed, totalTodayTarget: total };
+  }, [habitsForToday, todayISO]);
 
-  const completedTodayCount = habitsForToday.filter(isHabitCompletedToday).length;
-  const completionPercentage = habitsForToday.length > 0 ? Math.round((completedTodayCount / habitsForToday.length) * 100) : 0;
+  const completionPercentage = totalTodayTarget > 0 ? Math.round((completedTodayCount / totalTodayTarget) * 100) : 0;
 
   // Streak calculation
   const streaks = useMemo(() => {
@@ -182,7 +191,7 @@ export default function Dashboard() {
     let currentStreak = 0;
 
     if (habits && habits.length > 0) {
-        const allCompletionDates = new Set(habits.flatMap(h => h.completed_dates));
+        const allCompletionDates = new Set(habits.flatMap(h => Object.keys(h.completions)));
         const sortedDates = Array.from(allCompletionDates).sort();
 
         if (sortedDates.length > 0) {
@@ -222,7 +231,7 @@ export default function Dashboard() {
 
   const calendarDays = useMemo(() => {
     if (!habits) return [];
-    const allDates = habits.flatMap(h => h.completed_dates.map(d => parseISO(d)));
+    const allDates = habits.flatMap(h => Object.keys(h.completions).map(d => parseISO(d)));
     return allDates;
   }, [habits]);
   
@@ -230,12 +239,13 @@ export default function Dashboard() {
   useEffect(() => {
     // This effect runs to set up reminders, but permission is now requested on click.
     (habits || []).forEach(habit => {
+      const isCompleted = (getCompletionCount(habit, todayISO) >= (habit.targetCompletions || 1));
       if (habit.reminderTime && typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
         const [hours, minutes] = habit.reminderTime.split(':');
         const now = new Date();
         const reminderDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), Number(hours), Number(minutes));
         
-        if (reminderDate > now && !isHabitCompletedToday(habit)) {
+        if (reminderDate > now && !isCompleted) {
           const timeout = reminderDate.getTime() - now.getTime();
           const timerId = setTimeout(() => {
             new Notification('Habit Reminder', {
@@ -248,7 +258,7 @@ export default function Dashboard() {
         }
       }
     });
-  }, [habits, selectedDate, isHabitCompletedToday]);
+  }, [habits, selectedDate, todayISO]);
 
 
   const weeklyChartData = useMemo(() => {
@@ -263,9 +273,7 @@ export default function Dashboard() {
         let completedCount = 0;
         
         habits.forEach(habit => {
-            if (habit.completed_dates.includes(dateString)) {
-                completedCount++;
-            }
+            completedCount += getCompletionCount(habit, dateString);
         });
 
         return {
@@ -288,9 +296,8 @@ export default function Dashboard() {
       habits.forEach(habit => {
         let streak = 0;
         let checkDate = new Date(day);
-        const completionSet = new Set(habit.completed_dates);
-
-        while(completionSet.has(format(checkDate, 'yyyy-MM-dd'))) {
+        
+        while((habit.completions?.[format(checkDate, 'yyyy-MM-dd')] || 0) >= (habit.targetCompletions || 1)) {
           streak++;
           checkDate = subDays(checkDate, 1);
         }
@@ -452,8 +459,8 @@ export default function Dashboard() {
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatCard title="Current Streak" value={`${streaks.current} Days`} icon={Flame} description={`Longest: ${streaks.longest} days`} />
-            <StatCard title="Today's Progress" value={`${completionPercentage}%`} icon={Target} description={`${completedTodayCount} / ${habitsForToday.length} completed`} />
-            <StatCard title="Completed Habits" value={(habits || []).reduce((acc, h) => acc + h.completed_dates.length, 0)} icon={CheckCircle2} description="All time" />
+            <StatCard title="Today's Progress" value={`${completionPercentage}%`} icon={Target} description={`${completedTodayCount} / ${totalTodayTarget} completed`} />
+            <StatCard title="Completed Habits" value={(habits || []).reduce((acc, h) => acc + Object.values(h.completions).reduce((a, b) => a + b, 0), 0)} icon={CheckCircle2} description="All time" />
             <StatCard title="Achievements" value={`${achievements.filter(a => a.unlocked).length} / ${achievements.length}`} icon={Trophy} description="Unlocked" />
           </div>
 
@@ -469,30 +476,51 @@ export default function Dashboard() {
                     <Card className="glass-card">
                       <CardHeader>
                         <CardTitle>What will you accomplish today?</CardTitle>
-                        <CardDescription>Check off your habits as you complete them.</CardDescription>
+                        <CardDescription>Track your habits as you complete them.</CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
                          {isLoadingHabits ? (
                            <p>Loading habits...</p>
                          ) : habitsForToday.length > 0 ? habitsForToday.map(habit => {
                             const Icon = habitIcons[habit.icon] || Target;
+                            const target = habit.targetCompletions || 1;
+                            const count = getCompletionCount(habit, todayISO);
+                            const isCompleted = count >= target;
                             return (
-                            <div key={habit.id} className={cn("flex items-center gap-4 rounded-lg p-3 transition-colors group", isHabitCompletedToday(habit) ? 'bg-primary/20' : 'bg-muted/20')}>
-                               <Checkbox 
-                                  id={`habit-${habit.id}`} 
-                                  checked={isHabitCompletedToday(habit)}
-                                  onCheckedChange={(checked) => toggleHabitCompletion(habit.id, !!checked)}
-                                  className="h-6 w-6"
-                                />
+                            <div key={habit.id} className={cn("flex items-center gap-4 rounded-lg p-3 transition-colors group", isCompleted ? 'bg-primary/20' : 'bg-muted/20')}>
+                               <div className="flex items-center gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => updateHabitCompletion(habit.id, Math.max(0, count - 1))}
+                                    disabled={count === 0}
+                                >
+                                    <Minus className="h-4 w-4" />
+                                </Button>
+                                <div className="text-center font-bold w-10">
+                                    {count} / {target}
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => updateHabitCompletion(habit.id, Math.min(target, count + 1))}
+                                    disabled={isCompleted}
+                                >
+                                    <Plus className="h-4 w-4" />
+                                </Button>
+                               </div>
                                <div className="grid gap-1 flex-1">
-                                 <label htmlFor={`habit-${habit.id}`} className={cn("font-semibold cursor-pointer", isHabitCompletedToday(habit) && 'line-through text-muted-foreground')}>{habit.name}</label>
+                                 <label htmlFor={`habit-${habit.id}`} className={cn("font-semibold", isCompleted && 'line-through text-muted-foreground')}>{habit.name}</label>
                                  <p className="text-sm text-muted-foreground flex items-center gap-2">
                                    <Icon className="h-4 w-4" />
                                    <span>{habit.frequency.charAt(0).toUpperCase() + habit.frequency.slice(1)}</span>
                                    {habit.reminderTime && <><span className="text-xs">&bull;</span> <Bell className="h-4 w-4" /> {habit.reminderTime}</>}
                                  </p>
+                                 {target > 1 && <Progress value={(count / target) * 100} className="h-2 mt-1" />}
                                </div>
-                               {isHabitCompletedToday(habit) ? <CheckCircle2 className="h-6 w-6 text-green-500" /> : <XCircle className="h-6 w-6 text-muted-foreground/50" />}
+                               {isCompleted && <CheckCircle2 className="h-6 w-6 text-green-500" />}
                                <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
