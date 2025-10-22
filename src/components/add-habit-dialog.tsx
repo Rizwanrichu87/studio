@@ -3,16 +3,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import {
-  BookOpen,
-  BrainCircuit,
-  Coffee,
-  Dumbbell,
-  Leaf,
-  LucideIcon,
-  Plus,
-  Target,
-} from "lucide-react";
+import { Plus } from "lucide-react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -44,7 +36,6 @@ import { toast } from "@/hooks/use-toast";
 import type { Habit } from "@/lib/types";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Label } from "./ui/label";
-import { useState } from "react";
 import { habitIcons } from "@/lib/data";
 
 const iconNames = Object.keys(habitIcons);
@@ -77,7 +68,10 @@ export function AddHabitDialog({ children, onHabitAdd }: AddHabitDialogProps) {
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    onHabitAdd(values);
+    onHabitAdd({
+        ...values,
+        icon: values.icon as keyof typeof habitIcons,
+    });
     toast({
       title: "Habit Added",
       description: `"${values.name}" has been added to your list.`,
@@ -147,7 +141,7 @@ export function AddHabitDialog({ children, onHabitAdd }: AddHabitDialogProps) {
                         className="flex flex-wrap gap-4"
                       >
                         {iconNames.map((iconName) => {
-                          const Icon = habitIcons[iconName];
+                          const Icon = habitIcons[iconName as keyof typeof habitIcons];
                           return (
                             <FormItem
                               key={iconName}
