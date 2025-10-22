@@ -62,7 +62,7 @@ import { cn } from "@/lib/utils";
 import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { addDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { collection, doc } from "firebase/firestore";
-import { startOfWeek, endOfWeek, eachDayOfInterval, format, parseISO, isSameDay } from 'date-fns';
+import { startOfWeek, endOfWeek, eachDayOfInterval, format, parseISO, isSameDay, getDay, getDate } from 'date-fns';
 
 export default function Dashboard() {
   const auth = useAuth();
@@ -112,16 +112,23 @@ export default function Dashboard() {
   };
   
   const habitsForToday = useMemo(() => {
-    const dayOfWeek = selectedDate.getDay(); // Sunday - 0, ...
-    const date = selectedDate.getDate();
-
     return (habits || []).filter(habit => {
-      if (habit.frequency === 'daily') return true;
-      if (habit.frequency === 'weekly' && dayOfWeek === 1) return true; // Assuming weekly habits are on Mondays
-      if (habit.frequency === 'monthly' && date === 1) return true; // Assuming monthly habits are on the 1st
-      return false;
+        if (habit.frequency === 'daily') {
+            return true;
+        }
+        if (habit.frequency === 'weekly') {
+            // Show on the same day of the week it was created
+            const habitCreationDate = habit.id ? parseISO(new Date(parseInt(habit.id.substring(0, 8), 16) * 1000).toISOString()) : new Date();
+            return getDay(habitCreationDate) === getDay(selectedDate);
+        }
+        if (habit.frequency === 'monthly') {
+            // Show on the same day of the month it was created
+            const habitCreationDate = habit.id ? parseISO(new Date(parseInt(habit.id.substring(0, 8), 16) * 1000).toISOString()) : new Date();
+            return getDate(habitCreationDate) === getDate(selectedDate);
+        }
+        return false;
     });
-  }, [habits, selectedDate]);
+}, [habits, selectedDate]);
 
   const completedTodayCount = habitsForToday.filter(isHabitCompletedToday).length;
   const completionPercentage = habitsForToday.length > 0 ? Math.round((completedTodayCount / habitsForToday.length) * 100) : 0;
