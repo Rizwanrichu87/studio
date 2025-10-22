@@ -148,9 +148,9 @@ export function AddHabitDialog({ children, onHabitAdd }: AddHabitDialogProps) {
                               className="flex items-center space-x-3 space-y-0"
                             >
                               <FormControl>
-                                <RadioGroupItem value={iconName} className="sr-only" />
+                                 <RadioGroupItem value={iconName} id={iconName} className="sr-only" />
                               </FormControl>
-                              <Label className={`cursor-pointer rounded-md border-2 border-transparent p-2 transition-colors hover:bg-accent hover:text-accent-foreground ${field.value === iconName ? 'border-primary bg-accent' : ''}`}>
+                              <Label htmlFor={iconName} className={`cursor-pointer rounded-md border-2 border-transparent p-2 transition-colors hover:bg-accent hover:text-accent-foreground ${field.value === iconName ? 'border-primary bg-accent' : ''}`}>
                                 <Icon className="h-6 w-6" />
                               </Label>
                             </FormItem>
