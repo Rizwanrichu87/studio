@@ -14,16 +14,17 @@ import {
   Settings,
   Pencil,
   Trash2,
+  User as UserIcon,
 } from "lucide-react";
 import {
   habitIcons,
 } from "@/lib/data";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import type { Habit } from "@/lib/types";
 import { AddHabitDialog } from "@/components/add-habit-dialog";
 import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
-import { collection, doc } from "firebase/firestore";
+import { collection, doc, setDoc } from "firebase/firestore";
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
@@ -38,13 +39,24 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { AppLayout } from "@/components/app-layout";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { updateProfile } from "firebase/auth";
 
+const profileFormSchema = z.object({
+  username: z.string().min(2, "Username must be at least 2 characters."),
+});
 
 export default function SettingsPage() {
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
+  const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState("settings");
 
@@ -65,6 +77,39 @@ export default function SettingsPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [habitToDelete, setHabitToDelete] = useState<Habit | undefined>(undefined);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  
+  const profileForm = useForm<z.infer<typeof profileFormSchema>>({
+    resolver: zodResolver(profileFormSchema),
+    defaultValues: {
+      username: user?.displayName || "",
+    },
+  });
+
+  useEffect(() => {
+    if (user?.displayName) {
+      profileForm.reset({ username: user.displayName });
+    }
+  }, [user, profileForm]);
+
+  const onProfileSubmit = async (values: z.infer<typeof profileFormSchema>) => {
+    if (!user) return;
+    try {
+      await updateProfile(user, { displayName: values.username });
+      const userDocRef = doc(firestore, 'users', user.uid);
+      await setDoc(userDocRef, { username: values.username }, { merge: true });
+
+      toast({
+        title: "Profile Updated",
+        description: "Your username has been successfully updated.",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Update Failed",
+        description: error.message,
+      });
+    }
+  };
 
   const handleHabitSubmit = (submittedHabit: Omit<Habit, 'id' | 'completions'>) => {
     if (!user) return;
@@ -136,10 +181,46 @@ export default function SettingsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-        <div className="flex justify-center">
-        <Card className="glass-card w-full max-w-2xl">
+        <div className="flex flex-col items-center gap-6">
+          <Card className="glass-card w-full max-w-2xl">
             <CardHeader>
-              <CardTitle>Manage Habits</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <UserIcon className="h-5 w-5 text-primary" />
+                Profile Settings
+              </CardTitle>
+              <CardDescription>Update your display name.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...profileForm}>
+                <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
+                  <FormField
+                    control={profileForm.control}
+                    name="username"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Username</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Your Name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button type="submit" disabled={profileForm.formState.isSubmitting}>
+                    {profileForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Changes
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-card w-full max-w-2xl">
+            <CardHeader>
+               <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5 text-primary" />
+                Manage Habits
+              </CardTitle>
               <CardDescription>Edit or delete your existing habits.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
