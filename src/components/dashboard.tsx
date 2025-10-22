@@ -47,6 +47,7 @@ import {
   mockHabits,
   mockAchievements,
   mockProgressData,
+  habitIcons,
 } from "@/lib/data";
 import { useState, useMemo, useEffect } from "react";
 import type { Habit, Achievement } from "@/lib/types";
@@ -339,7 +340,9 @@ export default function Dashboard() {
                         <CardDescription>Check off your habits as you complete them.</CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                         {habitsForToday.length > 0 ? habitsForToday.map(habit => (
+                         {habitsForToday.length > 0 ? habitsForToday.map(habit => {
+                            const Icon = habitIcons[habit.icon] || Target;
+                            return (
                             <div key={habit.id} className={cn("flex items-center gap-4 rounded-lg p-3 transition-colors", isHabitCompletedToday(habit) ? 'bg-accent/50' : 'bg-muted/20')}>
                                <Checkbox 
                                   id={`habit-${habit.id}`} 
@@ -350,14 +353,14 @@ export default function Dashboard() {
                                <div className="grid gap-1 flex-1">
                                  <label htmlFor={`habit-${habit.id}`} className={cn("font-semibold cursor-pointer", isHabitCompletedToday(habit) && 'line-through text-muted-foreground')}>{habit.name}</label>
                                  <p className="text-sm text-muted-foreground flex items-center gap-2">
-                                   <habit.icon className="h-4 w-4" />
+                                   <Icon className="h-4 w-4" />
                                    <span>{habit.frequency.charAt(0).toUpperCase() + habit.frequency.slice(1)}</span>
                                    {habit.reminderTime && <><span className="text-xs">&bull;</span> <Bell className="h-4 w-4" /> {habit.reminderTime}</>}
                                  </p>
                                </div>
                                {isHabitCompletedToday(habit) ? <CheckCircle2 className="h-6 w-6 text-green-500" /> : <XCircle className="h-6 w-6 text-muted-foreground/50" />}
                             </div>
-                         )) : (
+                         )}) : (
                           <div className="text-center text-muted-foreground py-8">
                               <p>No habits scheduled for today.</p>
                               <AddHabitDialog onHabitAdd={handleAddHabit}>

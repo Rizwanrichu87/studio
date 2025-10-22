@@ -45,15 +45,8 @@ import type { Habit } from "@/lib/types";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Label } from "./ui/label";
 import { useState } from "react";
+import { habitIcons } from "@/lib/data";
 
-const habitIcons: { [key: string]: LucideIcon } = {
-  Dumbbell,
-  BookOpen,
-  Leaf,
-  Target,
-  BrainCircuit,
-  Coffee,
-};
 const iconNames = Object.keys(habitIcons);
 
 const formSchema = z.object({
@@ -84,10 +77,7 @@ export function AddHabitDialog({ children, onHabitAdd }: AddHabitDialogProps) {
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    onHabitAdd({
-      ...values,
-      icon: habitIcons[values.icon] || Target,
-    });
+    onHabitAdd(values);
     toast({
       title: "Habit Added",
       description: `"${values.name}" has been added to your list.`,

@@ -1,13 +1,22 @@
-import { BookOpen, Award, Dumbbell, Leaf, Target, BrainCircuit, Coffee, Trophy, TrendingUp, CalendarDays } from 'lucide-react';
+import { BookOpen, Award, Dumbbell, Leaf, Target, BrainCircuit, Coffee, Trophy, TrendingUp, CalendarDays, LucideIcon } from 'lucide-react';
 import type { Habit, Achievement, ProgressData } from './types';
 
+export const habitIcons: { [key: string]: LucideIcon } = {
+  BookOpen,
+  Dumbbell,
+  Leaf,
+  Target,
+  BrainCircuit,
+  Coffee,
+};
+
 export const mockHabits: Habit[] = [
-  { id: '1', name: 'Read for 20 minutes', frequency: 'daily', completed_dates: ['2024-07-20', '2024-07-21', '2024-07-23'], icon: BookOpen, reminderTime: '08:00' },
-  { id: '2', name: 'Morning workout', frequency: 'daily', completed_dates: ['2024-07-20', '2024-07-22', '2024-07-23'], icon: Dumbbell, reminderTime: '06:30' },
-  { id: '3', name: 'Meditate for 10 minutes', frequency: 'daily', completed_dates: ['2024-07-21', '2024-07-22'], icon: Leaf },
-  { id: '4', name: 'Weekly goal review', frequency: 'weekly', completed_dates: ['2024-07-21'], icon: Target },
-  { id: '5', name: 'Practice new skill', frequency: 'daily', completed_dates: ['2024-07-20', '2024-07-21', '2024-07-22', '2024-07-23'], icon: BrainCircuit, reminderTime: '18:00' },
-  { id: '6', name: 'No coffee after 3 PM', frequency: 'daily', completed_dates: [], icon: Coffee },
+  { id: '1', name: 'Read for 20 minutes', frequency: 'daily', completed_dates: ['2024-07-20', '2024-07-21', '2024-07-23'], icon: 'BookOpen', reminderTime: '08:00' },
+  { id: '2', name: 'Morning workout', frequency: 'daily', completed_dates: ['2024-07-20', '2024-07-22', '2024-07-23'], icon: 'Dumbbell', reminderTime: '06:30' },
+  { id: '3', name: 'Meditate for 10 minutes', frequency: 'daily', completed_dates: ['2024-07-21', '2024-07-22'], icon: 'Leaf' },
+  { id: '4', name: 'Weekly goal review', frequency: 'weekly', completed_dates: ['2024-07-21'], icon: 'Target' },
+  { id: '5', name: 'Practice new skill', frequency: 'daily', completed_dates: ['2024-07-20', '2024-07-21', '2024-07-22', '2024-07-23'], icon: 'BrainCircuit', reminderTime: '18:00' },
+  { id: '6', name: 'No coffee after 3 PM', frequency: 'daily', completed_dates: [], icon: 'Coffee' },
 ];
 
 export const mockAchievements: Achievement[] = [
