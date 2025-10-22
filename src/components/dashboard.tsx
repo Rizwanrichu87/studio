@@ -1,11 +1,6 @@
+
 "use client";
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -14,25 +9,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
 import {
-  Bell,
   CheckCircle2,
   Flame,
-  LayoutDashboard,
-  LogOut,
   PlusCircle,
   Settings,
   Target,
@@ -42,8 +26,8 @@ import {
   Trash2,
   Plus,
   Minus,
+  Bell
 } from "lucide-react";
-import Logo from "./logo";
 import { StatCard } from "./stat-card";
 import {
   mockAchievements,
@@ -67,7 +51,7 @@ import { cn } from "@/lib/utils";
 import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { collection, doc } from "firebase/firestore";
-import { startOfWeek, endOfWeek, eachDayOfInterval, format, parseISO, subDays, startOfMonth, endOfMonth, eachDayOfInterval as eachDayOfIntervalMonth } from 'date-fns';
+import { startOfWeek, endOfWeek, eachDayOfInterval, format, parseISO, subDays, startOfMonth, endOfMonth, eachDayOfInterval as eachDayOfIntervalMonth, getDay } from 'date-fns';
 import Link from "next/link";
 import {
   AlertDialog,
@@ -80,11 +64,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Progress } from "./ui/progress";
+import { AppLayout } from "./app-layout";
+import { useRouter } from "next/navigation";
 
 export default function Dashboard() {
   const auth = useAuth();
   const { user } = useUser();
   const firestore = useFirestore();
+  const router = useRouter();
 
   const habitsQuery = useMemoFirebase(() => {
       if (!user) return null;
@@ -95,8 +82,9 @@ export default function Dashboard() {
   
   const [achievements] = useState<Achievement[]>(mockAchievements);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  
   const [activeTab, setActiveTab] = useState("today");
-
+  
   const [habitToEdit, setHabitToEdit] = useState<Habit | undefined>(undefined);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [habitToDelete, setHabitToDelete] = useState<Habit | undefined>(undefined);
@@ -171,7 +159,7 @@ export default function Dashboard() {
         }
         return false;
     });
-}, [habits]);
+}, [habits, selectedDate]);
 
   const { completedTodayCount, totalTodayTarget } = useMemo(() => {
     let completed = 0;
@@ -181,7 +169,7 @@ export default function Dashboard() {
       total += habit.targetCompletions || 1;
     });
     return { completedTodayCount: completed, totalTodayTarget: total };
-  }, [habitsForToday, todayISO, getCompletionCount]);
+  }, [habitsForToday, todayISO]);
 
   const completionPercentage = totalTodayTarget > 0 ? Math.round((completedTodayCount / totalTodayTarget) * 100) : 0;
 
@@ -258,7 +246,7 @@ export default function Dashboard() {
         }
       }
     });
-  }, [habits, selectedDate, todayISO, getCompletionCount]);
+  }, [habits, selectedDate, todayISO]);
 
 
   const weeklyChartData = useMemo(() => {
@@ -281,7 +269,7 @@ export default function Dashboard() {
             completed: completedCount,
         };
     });
-}, [selectedDate, habits, getCompletionCount]);
+}, [selectedDate, habits]);
 
  const streakChartData = useMemo(() => {
     if (!habits || habits.length === 0) return [];
@@ -328,353 +316,250 @@ export default function Dashboard() {
 
 
   const handleNavClick = (tab: string) => {
-    setActiveTab(tab);
-  };
-
-  const isDashboardTabActive = ["today", "progress", "dashboard"].includes(activeTab);
-
-  const handleLogout = () => {
-    auth.signOut();
-  }
-
-  const handleNotificationClick = () => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      if (Notification.permission === 'default') {
-        Notification.requestPermission();
-      } else if (Notification.permission === 'denied') {
-        console.log('Notification permission has been denied.');
-        alert('You have disabled notifications. To enable them, please go to your browser settings.');
-      }
+    if(tab === 'settings') {
+        router.push('/settings');
+    } else {
+        setActiveTab(tab);
     }
   };
 
 
   return (
-    <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
-      <div className="hidden border-r bg-card/60 backdrop-blur-xl lg:block">
-        <div className="flex h-full max-h-screen flex-col gap-2">
-          <div className="flex h-[60px] items-center border-b px-6">
-            <Link href="/" className="flex items-center gap-2 font-semibold">
-              <Logo className="h-6 w-6 text-primary" />
-              <span className="font-headline">AI Habitual</span>
-            </Link>
-            <Button variant="outline" size="icon" className="ml-auto h-8 w-8" onClick={handleNotificationClick}>
-              <Bell className="h-4 w-4" />
-              <span className="sr-only">Toggle notifications</span>
-            </Button>
-          </div>
-          <div className="flex-1 overflow-auto py-2">
-            <nav className="grid items-start px-4 text-sm font-medium">
-              <Link
-                href="/dashboard"
-                onClick={() => handleNavClick('dashboard')}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-                  isDashboardTabActive && "bg-muted text-primary"
-                )}
-              >
-                <LayoutDashboard className="h-4 w-4" />
-                Dashboard
-              </Link>
-              <button
-                onClick={() => setActiveTab('achievements')}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-                  activeTab === 'achievements' && "bg-muted text-primary"
-                )}
-              >
-                <Trophy className="h-4 w-4" />
-                Achievements
-              </button>
-              <Link
-                href="/settings"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-              >
-                <Settings className="h-4 w-4" />
-                Settings
-              </Link>
-            </nav>
-          </div>
-        </div>
+    <AppLayout activeTab={activeTab} onNavClick={handleNavClick} onHabitSubmit={handleHabitSubmit}>
+       <AddHabitDialog onHabitSubmit={handleHabitSubmit} habitToEdit={habitToEdit} open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+         <div/>
+       </AddHabitDialog>
+       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your
+              habit "{habitToDelete?.name}".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteHabit}>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard title="Current Streak" value={`${streaks.current} Days`} icon={Flame} description={`Longest: ${streaks.longest} days`} />
+        <StatCard title="Today's Progress" value={`${completionPercentage}%`} icon={Target} description={`${completedTodayCount} / ${totalTodayTarget} completed`} />
+        <StatCard title="Completed Habits" value={(habits || []).reduce((acc, h) => acc + Object.values(h.completions || {}).reduce((a, b) => a + b, 0), 0)} icon={CheckCircle2} description="All time" />
+        <StatCard title="Achievements" value={`${achievements.filter(a => a.unlocked).length} / ${achievements.length}`} icon={Trophy} description="Unlocked" />
       </div>
-      <div className="flex flex-col bg-transparent">
-        <header className="flex h-14 lg:h-[60px] items-center gap-4 border-b bg-card/60 backdrop-blur-xl px-6 sticky top-0 z-20">
-          <a href="#" className="lg:hidden">
-            <Logo className="h-6 w-6 text-primary" />
-            <span className="sr-only">Home</span>
-          </a>
-          <div className="w-full flex-1">
-          </div>
-          <AddHabitDialog onHabitSubmit={handleHabitSubmit}>
-             <Button size="sm" className="gap-1">
-                <PlusCircle className="h-4 w-4" />
-                New Habit
-             </Button>
-          </AddHabitDialog>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full border w-8 h-8"
-              >
-                <Avatar className="h-8 w-8">
-                  {user?.photoURL && <AvatarImage src={user.photoURL} alt="User Avatar" />}
-                  <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
-                </Avatar>
-                <span className="sr-only">Toggle user menu</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{user?.displayName || 'My Account'}</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <Link href="/settings"><DropdownMenuItem>Settings</DropdownMenuItem></Link>
-              <DropdownMenuItem>Support</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 animate-fade-in-up">
-           <AddHabitDialog onHabitSubmit={handleHabitSubmit} habitToEdit={habitToEdit} open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-             <div/>
-           </AddHabitDialog>
-           <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete your
-                  habit "{habitToDelete?.name}".
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteHabit}>Continue</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
 
-
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <StatCard title="Current Streak" value={`${streaks.current} Days`} icon={Flame} description={`Longest: ${streaks.longest} days`} />
-            <StatCard title="Today's Progress" value={`${completionPercentage}%`} icon={Target} description={`${completedTodayCount} / ${totalTodayTarget} completed`} />
-            <StatCard title="Completed Habits" value={(habits || []).reduce((acc, h) => acc + Object.values(h.completions || {}).reduce((a, b) => a + b, 0), 0)} icon={CheckCircle2} description="All time" />
-            <StatCard title="Achievements" value={`${achievements.filter(a => a.unlocked).length} / ${achievements.length}`} icon={Trophy} description="Unlocked" />
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-             <div className="lg:col-span-2">
-                <Tabs value={activeTab} onValueChange={setActiveTab} defaultValue="today">
-                  <TabsList>
-                    <TabsTrigger value="today">Today's Habits</TabsTrigger>
-                    <TabsTrigger value="progress">Progress</TabsTrigger>
-                    <TabsTrigger value="achievements">Achievements</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="today" className="mt-4">
-                    <Card className="glass-card">
-                      <CardHeader>
-                        <CardTitle>What will you accomplish today?</CardTitle>
-                        <CardDescription>Track your habits as you complete them.</CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                         {isLoadingHabits ? (
-                           <p>Loading habits...</p>
-                         ) : habitsForToday.length > 0 ? habitsForToday.map(habit => {
-                            const Icon = habitIcons[habit.icon] || Target;
-                            const target = habit.targetCompletions || 1;
-                            const count = getCompletionCount(habit, todayISO);
-                            const isCompleted = count >= target;
-                            return (
-                            <div key={habit.id} className={cn("flex items-center gap-4 rounded-lg p-3 transition-colors group", isCompleted ? 'bg-primary/20' : 'bg-muted/20')}>
-                               <div className="flex items-center gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={() => updateHabitCompletion(habit.id, Math.max(0, count - 1))}
-                                    disabled={count === 0}
-                                >
-                                    <Minus className="h-4 w-4" />
-                                </Button>
-                                <div className="text-center font-bold w-10">
-                                    {count} / {target}
-                                </div>
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={() => updateHabitCompletion(habit.id, Math.min(target, count + 1))}
-                                    disabled={isCompleted}
-                                >
-                                    <Plus className="h-4 w-4" />
-                                </Button>
-                               </div>
-                               <div className="grid gap-1 flex-1">
-                                 <label htmlFor={`habit-${habit.id}`} className={cn("font-semibold", isCompleted && 'line-through text-muted-foreground')}>{habit.name}</label>
-                                 <p className="text-sm text-muted-foreground flex items-center gap-2">
-                                   <Icon className="h-4 w-4" />
-                                   <span>{habit.frequency.charAt(0).toUpperCase() + habit.frequency.slice(1)}</span>
-                                   {habit.reminderTime && <><span className="text-xs">&bull;</span> <Bell className="h-4 w-4" /> {habit.reminderTime}</>}
-                                 </p>
-                                 {target > 1 && <Progress value={(count / target) * 100} className="h-2 mt-1" />}
-                               </div>
-                               {isCompleted && <CheckCircle2 className="h-6 w-6 text-green-500" />}
-                               <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <MoreVertical className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => openEditDialog(habit)}>
-                                      <Pencil className="mr-2 h-4 w-4" />
-                                      Edit
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => openDeleteDialog(habit)} className="text-destructive">
-                                      <Trash2 className="mr-2 h-4 w-4" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+         <div className="lg:col-span-2">
+            <Tabs value={activeTab} onValueChange={setActiveTab} defaultValue="today">
+              <TabsList>
+                <TabsTrigger value="today">Today's Habits</TabsTrigger>
+                <TabsTrigger value="progress">Progress</TabsTrigger>
+                <TabsTrigger value="achievements">Achievements</TabsTrigger>
+              </TabsList>
+              <TabsContent value="today" className="mt-4">
+                <Card className="glass-card">
+                  <CardHeader>
+                    <CardTitle>What will you accomplish today?</CardTitle>
+                    <CardDescription>Track your habits as you complete them.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                     {isLoadingHabits ? (
+                       <p>Loading habits...</p>
+                     ) : habitsForToday.length > 0 ? habitsForToday.map(habit => {
+                        const Icon = habitIcons[habit.icon] || Target;
+                        const target = habit.targetCompletions || 1;
+                        const count = getCompletionCount(habit, todayISO);
+                        const isCompleted = count >= target;
+                        return (
+                        <div key={habit.id} className={cn("flex items-center gap-4 rounded-lg p-3 transition-colors group", isCompleted ? 'bg-primary/20' : 'bg-muted/20')}>
+                           <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => updateHabitCompletion(habit.id, Math.max(0, count - 1))}
+                                disabled={count === 0}
+                            >
+                                <Minus className="h-4 w-4" />
+                            </Button>
+                            <div className="text-center font-bold w-10">
+                                {count} / {target}
                             </div>
-                         )}) : (
-                          <div className="text-center text-muted-foreground py-8">
-                              <p>No habits scheduled for today.</p>
-                              <AddHabitDialog onHabitSubmit={handleHabitSubmit}>
-                                  <Button variant="link" className="mt-2">Add a new habit</Button>
-                              </AddHabitDialog>
-                          </div>
-                         )}
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                  <TabsContent value="progress" className="mt-4">
-                    <div className="grid gap-6">
-                      <div className="grid gap-6 md:grid-cols-2">
-                          <Card className="glass-card">
-                            <CardHeader>
-                              <CardTitle>Weekly Report</CardTitle>
-                               <CardDescription>Habits completed in the selected week.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                               <ChartContainer config={chartConfig} className="h-[200px] w-full">
-                                    <BarChart data={weeklyChartData} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
-                                      <CartesianGrid vertical={false} stroke="hsl(var(--border) / 0.5)" />
-                                      <XAxis
-                                        dataKey="date"
-                                        tickLine={false}
-                                        axisLine={false}
-                                        tickMargin={8}
-                                      />
-                                      <YAxis allowDecimals={false} />
-                                      <ChartTooltip
-                                        cursor={false}
-                                        content={<ChartTooltipContent />}
-                                      />
-                                      <Bar
-                                        dataKey="completed"
-                                        fill="var(--color-completed)"
-                                        radius={4}
-                                      />
-                                    </BarChart>
-                                  </ChartContainer>
-                            </CardContent>
-                          </Card>
-                          <Card className="flex flex-col glass-card">
-                             <CardHeader>
-                                <CardTitle>Completion Calendar</CardTitle>
-                                <CardDescription>Your activity overview. Click a day to see the weekly report.</CardDescription>
-                              </CardHeader>
-                              <CardContent className="flex-1 flex items-center justify-center">
-                                  <Calendar
-                                    mode="single"
-                                    selected={selectedDate}
-                                    onSelect={(day) => day && setSelectedDate(day)}
-                                    modifiers={{
-                                      completed: calendarDays
-                                    }}
-                                    modifiersClassNames={{
-                                      completed: "bg-primary/50 text-primary-foreground"
-                                    }}
-                                    classNames={{
-                                      day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
-                                    }}
-                                    className="p-0"
-                                  />
-                              </CardContent>
-                          </Card>
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => updateHabitCompletion(habit.id, Math.min(target, count + 1))}
+                                disabled={isCompleted}
+                            >
+                                <Plus className="h-4 w-4" />
+                            </Button>
+                           </div>
+                           <div className="grid gap-1 flex-1">
+                             <label htmlFor={`habit-${habit.id}`} className={cn("font-semibold", isCompleted && 'line-through text-muted-foreground')}>{habit.name}</label>
+                             <p className="text-sm text-muted-foreground flex items-center gap-2">
+                               <Icon className="h-4 w-4" />
+                               <span>{habit.frequency.charAt(0).toUpperCase() + habit.frequency.slice(1)}</span>
+                               {habit.reminderTime && <><span className="text-xs">&bull;</span> <Bell className="h-4 w-4" /> {habit.reminderTime}</>}
+                             </p>
+                             {target > 1 && <Progress value={(count / target) * 100} className="h-2 mt-1" />}
+                           </div>
+                           {isCompleted && <CheckCircle2 className="h-6 w-6 text-green-500" />}
+                           <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => openEditDialog(habit)}>
+                                  <Pencil className="mr-2 h-4 w-4" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => openDeleteDialog(habit)} className="text-destructive">
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                     )}) : (
+                      <div className="text-center text-muted-foreground py-8">
+                          <p>No habits scheduled for today.</p>
+                          <AddHabitDialog onHabitSubmit={handleHabitSubmit}>
+                              <Button variant="link" className="mt-2">Add a new habit</Button>
+                          </AddHabitDialog>
                       </div>
+                     )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              <TabsContent value="progress" className="mt-4">
+                <div className="grid gap-6">
+                  <div className="grid gap-6 md:grid-cols-2">
                       <Card className="glass-card">
-                          <CardHeader>
-                            <CardTitle>Streak Progression</CardTitle>
-                             <CardDescription>Streak overview for each habit in {format(selectedDate, 'MMMM yyyy')}.</CardDescription>
-                          </CardHeader>
-                          <CardContent>
-                             <ChartContainer config={chartConfig} className="h-[300px] w-full">
-                                  <LineChart data={streakChartData} margin={{ top: 20, right: 50, bottom: 5, left: 0 }}>
-                                    <CartesianGrid vertical={false} stroke="hsl(var(--border) / 0.5)" />
-                                    <XAxis
-                                      dataKey="date"
-                                      tickLine={false}
-                                      axisLine={false}
-                                      tickMargin={8}
-                                      tickFormatter={(value) => value}
-                                    />
-                                    <YAxis allowDecimals={false} />
-                                    <ChartTooltip
-                                      cursor={false}
-                                      content={<ChartTooltipContent />}
-                                    />
-                                    <ChartLegend content={<ChartLegendContent />} />
-                                    {(habits || []).map((habit, index) => (
-                                       <Line
-                                          key={habit.id}
-                                          dataKey={habit.name}
-                                          type="monotone"
-                                          stroke={`hsl(var(--chart-${(index % 5) + 1}))`}
-                                          strokeWidth={2}
-                                          dot={false}
-                                        />
-                                    ))}
-                                  </LineChart>
-                                </ChartContainer>
-                          </CardContent>
-                        </Card>
-                    </div>
-                  </TabsContent>
-                  <TabsContent value="achievements" className="mt-4">
-                    <Card className="glass-card">
                         <CardHeader>
-                          <CardTitle>Your Achievements</CardTitle>
-                          <CardDescription>Celebrate your progress and milestones.</CardDescription>
+                          <CardTitle>Weekly Report</CardTitle>
+                           <CardDescription>Habits completed in the selected week.</CardDescription>
                         </CardHeader>
-                        <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                          {achievements.map(ach => (
-                            <Card key={ach.id} className={cn("p-4 flex items-start gap-4 glass-card", !ach.unlocked && "opacity-50 bg-muted/30")}>
-                                <div className={cn("p-3 rounded-full", ach.unlocked ? "bg-primary/10 text-primary" : "bg-muted-foreground/10 text-muted-foreground")}>
-                                  <ach.icon className="h-6 w-6"/>
-                                </div>
-                                <div className="flex-1">
-                                  <h3 className="font-semibold">{ach.name}</h3>
-                                  <p className="text-sm text-muted-foreground">{ach.description}</p>
-                                </div>
-                            </Card>
-                          ))}
+                        <CardContent>
+                           <ChartContainer config={chartConfig} className="h-[200px] w-full">
+                                <BarChart data={weeklyChartData} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
+                                  <CartesianGrid vertical={false} stroke="hsl(var(--border) / 0.5)" />
+                                  <XAxis
+                                    dataKey="date"
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tickMargin={8}
+                                  />
+                                  <YAxis allowDecimals={false} />
+                                  <ChartTooltip
+                                    cursor={false}
+                                    content={<ChartTooltipContent />}
+                                  />
+                                  <Bar
+                                    dataKey="completed"
+                                    fill="var(--color-completed)"
+                                    radius={4}
+                                  />
+                                </BarChart>
+                              </ChartContainer>
                         </CardContent>
                       </Card>
-                  </TabsContent>
-                </Tabs>
-             </div>
-              <div className="lg:col-span-1">
-                <AIHelper habits={habits || []} streaks={streaks} />
-              </div>
+                      <Card className="flex flex-col glass-card">
+                         <CardHeader>
+                            <CardTitle>Completion Calendar</CardTitle>
+                            <CardDescription>Your activity overview. Click a day to see the weekly report.</CardDescription>
+                          </CardHeader>
+                          <CardContent className="flex-1 flex items-center justify-center">
+                              <Calendar
+                                mode="single"
+                                selected={selectedDate}
+                                onSelect={(day) => day && setSelectedDate(day)}
+                                modifiers={{
+                                  completed: calendarDays
+                                }}
+                                modifiersClassNames={{
+                                  completed: "bg-primary/50 text-primary-foreground"
+                                }}
+                                classNames={{
+                                  day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
+                                }}
+                                className="p-0"
+                              />
+                          </CardContent>
+                      </Card>
+                  </div>
+                  <Card className="glass-card">
+                      <CardHeader>
+                        <CardTitle>Streak Progression</CardTitle>
+                         <CardDescription>Streak overview for each habit in {format(selectedDate, 'MMMM yyyy')}.</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                         <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                              <LineChart data={streakChartData} margin={{ top: 20, right: 50, bottom: 5, left: 0 }}>
+                                <CartesianGrid vertical={false} stroke="hsl(var(--border) / 0.5)" />
+                                <XAxis
+                                  dataKey="date"
+                                  tickLine={false}
+                                  axisLine={false}
+                                  tickMargin={8}
+                                  tickFormatter={(value) => value}
+                                />
+                                <YAxis allowDecimals={false} />
+                                <ChartTooltip
+                                  cursor={false}
+                                  content={<ChartTooltipContent />}
+                                />
+                                <ChartLegend content={<ChartLegendContent />} />
+                                {(habits || []).map((habit, index) => (
+                                   <Line
+                                      key={habit.id}
+                                      dataKey={habit.name}
+                                      type="monotone"
+                                      stroke={`hsl(var(--chart-${(index % 5) + 1}))`}
+                                      strokeWidth={2}
+                                      dot={false}
+                                    />
+                                ))}
+                              </LineChart>
+                            </ChartContainer>
+                      </CardContent>
+                    </Card>
+                </div>
+              </TabsContent>
+              <TabsContent value="achievements" className="mt-4">
+                <Card className="glass-card">
+                    <CardHeader>
+                      <CardTitle>Your Achievements</CardTitle>
+                      <CardDescription>Celebrate your progress and milestones.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {achievements.map(ach => (
+                        <Card key={ach.id} className={cn("p-4 flex items-start gap-4 glass-card", !ach.unlocked && "opacity-50 bg-muted/30")}>
+                            <div className={cn("p-3 rounded-full", ach.unlocked ? "bg-primary/10 text-primary" : "bg-muted-foreground/10 text-muted-foreground")}>
+                              <ach.icon className="h-6 w-6"/>
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-semibold">{ach.name}</h3>
+                              <p className="text-sm text-muted-foreground">{ach.description}</p>
+                            </div>
+                        </Card>
+                      ))}
+                    </CardContent>
+                  </Card>
+              </TabsContent>
+            </Tabs>
+         </div>
+          <div className="lg:col-span-1">
+            <AIHelper habits={habits || []} streaks={streaks} />
           </div>
-        </main>
       </div>
-    </div>
+    </AppLayout>
   );
 }
