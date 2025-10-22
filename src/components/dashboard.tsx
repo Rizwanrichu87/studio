@@ -29,7 +29,6 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import {
-  BarChart as BarChartIcon,
   Bell,
   CheckCircle2,
   Flame,
@@ -59,8 +58,10 @@ import {
   ChartTooltip,
   ChartTooltipContent,
   ChartConfig,
+  ChartLegend,
+  ChartLegendContent,
 } from "@/components/ui/chart";
-import { BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import { cn } from "@/lib/utils";
 
 
@@ -222,12 +223,12 @@ export default function Dashboard() {
 
   return (
     <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
-      <div className="hidden border-r bg-muted/40 lg:block">
+      <div className="hidden border-r bg-card lg:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-[60px] items-center border-b px-6">
             <a href="/" className="flex items-center gap-2 font-semibold">
               <Logo className="h-6 w-6 text-primary" />
-              <span className="">AI Habitual</span>
+              <span className="font-headline">AI Habitual</span>
             </a>
             <Button variant="outline" size="icon" className="ml-auto h-8 w-8">
               <Bell className="h-4 w-4" />
@@ -259,13 +260,10 @@ export default function Dashboard() {
               </a>
             </nav>
           </div>
-          <div className="mt-auto p-4">
-             <AIHelper habits={habits} streaks={streaks} />
-          </div>
         </div>
       </div>
       <div className="flex flex-col">
-        <header className="flex h-14 lg:h-[60px] items-center gap-4 border-b bg-muted/40 px-6">
+        <header className="flex h-14 lg:h-[60px] items-center gap-4 border-b bg-card px-6">
           <a href="#" className="lg:hidden">
             <Logo className="h-6 w-6 text-primary" />
             <span className="sr-only">Home</span>
@@ -314,59 +312,59 @@ export default function Dashboard() {
             <StatCard title="Achievements" value={`${achievements.filter(a => a.unlocked).length} / ${achievements.length}`} icon={Trophy} description="Unlocked" />
           </div>
 
-          <div>
-             <Tabs defaultValue="today">
-                <TabsList>
-                  <TabsTrigger value="today">Today's Habits</TabsTrigger>
-                  <TabsTrigger value="progress">Progress</TabsTrigger>
-                  <TabsTrigger value="achievements">Achievements</TabsTrigger>
-                </TabsList>
-                <TabsContent value="today" className="mt-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>What will you accomplish today?</CardTitle>
-                      <CardDescription>Check off your habits as you complete them.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                       {habitsForToday.length > 0 ? habitsForToday.map(habit => (
-                          <div key={habit.id} className={cn("flex items-center gap-4 rounded-lg p-3 transition-colors", isHabitCompletedToday(habit) ? 'bg-accent/50' : 'bg-muted/20')}>
-                             <Checkbox 
-                                id={`habit-${habit.id}`} 
-                                checked={isHabitCompletedToday(habit)}
-                                onCheckedChange={(checked) => toggleHabitCompletion(habit.id, !!checked)}
-                                className="h-6 w-6"
-                              />
-                             <div className="grid gap-1 flex-1">
-                               <label htmlFor={`habit-${habit.id}`} className={cn("font-semibold cursor-pointer", isHabitCompletedToday(habit) && 'line-through text-muted-foreground')}>{habit.name}</label>
-                               <p className="text-sm text-muted-foreground flex items-center gap-2">
-                                 <habit.icon className="h-4 w-4" />
-                                 <span>{habit.frequency.charAt(0).toUpperCase() + habit.frequency.slice(1)}</span>
-                                 {habit.reminderTime && <><span className="text-xs">&bull;</span> <Bell className="h-4 w-4" /> {habit.reminderTime}</>}
-                               </p>
-                             </div>
-                             {isHabitCompletedToday(habit) ? <CheckCircle2 className="h-6 w-6 text-green-500" /> : <XCircle className="h-6 w-6 text-muted-foreground/50" />}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+             <div className="lg:col-span-2">
+                <Tabs defaultValue="today">
+                  <TabsList>
+                    <TabsTrigger value="today">Today's Habits</TabsTrigger>
+                    <TabsTrigger value="progress">Progress</TabsTrigger>
+                    <TabsTrigger value="achievements">Achievements</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="today" className="mt-4">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>What will you accomplish today?</CardTitle>
+                        <CardDescription>Check off your habits as you complete them.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                         {habitsForToday.length > 0 ? habitsForToday.map(habit => (
+                            <div key={habit.id} className={cn("flex items-center gap-4 rounded-lg p-3 transition-colors", isHabitCompletedToday(habit) ? 'bg-accent/50' : 'bg-muted/20')}>
+                               <Checkbox 
+                                  id={`habit-${habit.id}`} 
+                                  checked={isHabitCompletedToday(habit)}
+                                  onCheckedChange={(checked) => toggleHabitCompletion(habit.id, !!checked)}
+                                  className="h-6 w-6"
+                                />
+                               <div className="grid gap-1 flex-1">
+                                 <label htmlFor={`habit-${habit.id}`} className={cn("font-semibold cursor-pointer", isHabitCompletedToday(habit) && 'line-through text-muted-foreground')}>{habit.name}</label>
+                                 <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                   <habit.icon className="h-4 w-4" />
+                                   <span>{habit.frequency.charAt(0).toUpperCase() + habit.frequency.slice(1)}</span>
+                                   {habit.reminderTime && <><span className="text-xs">&bull;</span> <Bell className="h-4 w-4" /> {habit.reminderTime}</>}
+                                 </p>
+                               </div>
+                               {isHabitCompletedToday(habit) ? <CheckCircle2 className="h-6 w-6 text-green-500" /> : <XCircle className="h-6 w-6 text-muted-foreground/50" />}
+                            </div>
+                         )) : (
+                          <div className="text-center text-muted-foreground py-8">
+                              <p>No habits scheduled for today.</p>
+                              <AddHabitDialog onHabitAdd={handleAddHabit}>
+                                  <Button variant="link" className="mt-2">Add a new habit</Button>
+                              </AddHabitDialog>
                           </div>
-                       )) : (
-                        <div className="text-center text-muted-foreground py-8">
-                            <p>No habits scheduled for today.</p>
-                            <AddHabitDialog onHabitAdd={handleAddHabit}>
-                                <Button variant="link" className="mt-2">Add a new habit</Button>
-                            </AddHabitDialog>
-                        </div>
-                       )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-                <TabsContent value="progress" className="mt-4">
-                  <div className="grid gap-6 md:grid-cols-2">
-                      <Card>
-                        <CardHeader>
-                          <CardTitle>Weekly Report</CardTitle>
-                           <CardDescription>Habits completed in the last 7 days.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                           <ChartContainer config={chartConfig} className="h-[200px] w-full">
-                                <ResponsiveContainer>
+                         )}
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                  <TabsContent value="progress" className="mt-4">
+                    <div className="grid gap-6 md:grid-cols-2">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Weekly Report</CardTitle>
+                             <CardDescription>Habits completed in the last 7 days.</CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                             <ChartContainer config={chartConfig} className="h-[200px] w-full">
                                   <BarChart data={chartData} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
                                     <CartesianGrid vertical={false} />
                                     <XAxis
@@ -386,51 +384,54 @@ export default function Dashboard() {
                                       radius={4}
                                     />
                                   </BarChart>
-                                </ResponsiveContainer>
-                              </ChartContainer>
+                                </ChartContainer>
+                          </CardContent>
+                        </Card>
+                        <Card className="flex flex-col">
+                           <CardHeader>
+                              <CardTitle>Completion Calendar</CardTitle>
+                              <CardDescription>Your activity overview.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex-1 flex items-center justify-center">
+                                <Calendar
+                                  mode="multiple"
+                                  selected={mockProgressData.filter(d => d.completed > 0).map(d => new Date(d.date))}
+                                  onDayClick={(day) => setToday(day)}
+                                  classNames={{
+                                    day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
+                                  }}
+                                  className="p-0"
+                                />
+                            </CardContent>
+                        </Card>
+                    </div>
+                  </TabsContent>
+                  <TabsContent value="achievements" className="mt-4">
+                    <Card>
+                        <CardHeader>
+                          <CardTitle>Your Achievements</CardTitle>
+                          <CardDescription>Celebrate your progress and milestones.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                          {achievements.map(ach => (
+                            <Card key={ach.id} className={cn("p-4 flex items-start gap-4", !ach.unlocked && "opacity-50 bg-muted/30")}>
+                                <div className={cn("p-3 rounded-full", ach.unlocked ? "bg-primary/10 text-primary" : "bg-muted-foreground/10 text-muted-foreground")}>
+                                  <ach.icon className="h-6 w-6"/>
+                                </div>
+                                <div className="flex-1">
+                                  <h3 className="font-semibold">{ach.name}</h3>
+                                  <p className="text-sm text-muted-foreground">{ach.description}</p>
+                                </div>
+                            </Card>
+                          ))}
                         </CardContent>
                       </Card>
-                      <Card className="flex flex-col">
-                         <CardHeader>
-                            <CardTitle>Completion Calendar</CardTitle>
-                            <CardDescription>Your activity overview.</CardDescription>
-                          </CardHeader>
-                          <CardContent className="flex-1 flex items-center justify-center">
-                              <Calendar
-                                mode="multiple"
-                                selected={mockProgressData.filter(d => d.completed > 0).map(d => new Date(d.date))}
-                                onDayClick={(day) => setToday(day)}
-                                classNames={{
-                                  day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
-                                }}
-                                className="p-0"
-                              />
-                          </CardContent>
-                      </Card>
-                  </div>
-                </TabsContent>
-                <TabsContent value="achievements" className="mt-4">
-                  <Card>
-                      <CardHeader>
-                        <CardTitle>Your Achievements</CardTitle>
-                        <CardDescription>Celebrate your progress and milestones.</CardDescription>
-                      </CardHeader>
-                      <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {achievements.map(ach => (
-                          <Card key={ach.id} className={cn("p-4 flex items-start gap-4", !ach.unlocked && "opacity-50 bg-muted/30")}>
-                              <div className={cn("p-3 rounded-full", ach.unlocked ? "bg-primary/10 text-primary" : "bg-muted-foreground/10 text-muted-foreground")}>
-                                <ach.icon className="h-6 w-6"/>
-                              </div>
-                              <div className="flex-1">
-                                <h3 className="font-semibold">{ach.name}</h3>
-                                <p className="text-sm text-muted-foreground">{ach.description}</p>
-                              </div>
-                          </Card>
-                        ))}
-                      </CardContent>
-                    </Card>
-                </TabsContent>
-              </Tabs>
+                  </TabsContent>
+                </Tabs>
+             </div>
+              <div className="lg:col-span-1">
+                <AIHelper habits={habits} streaks={streaks} />
+              </div>
           </div>
         </main>
       </div>
