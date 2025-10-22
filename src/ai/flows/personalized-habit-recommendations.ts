@@ -31,6 +31,8 @@ const PersonalizedHabitRecommendationsOutputSchema = z.object({
     .describe(
       'A string containing personalized recommendations for optimizing habits, such as suggesting optimal times or identifying potential roadblocks.'
     ),
+    patternDetection: z.string().describe('Identifies days users commonly miss habits and why.'),
+    optimalTimeSuggestion: z.string().describe('Recommends best times for new habits based on history.'),
 });
 export type PersonalizedHabitRecommendationsOutput = z.infer<
   typeof PersonalizedHabitRecommendationsOutputSchema
@@ -46,13 +48,15 @@ const prompt = ai.definePrompt({
   name: 'personalizedHabitRecommendationsPrompt',
   input: {schema: PersonalizedHabitRecommendationsInputSchema},
   output: {schema: PersonalizedHabitRecommendationsOutputSchema},
-  prompt: `You are an AI habit coach. Analyze the user's habit tracking data and goals to provide personalized recommendations for optimizing their habits.
+  prompt: `You are an AI habit coach. Analyze the user's habit tracking data and goals to provide personalized recommendations.
 
 Habit Tracking Data: {{{habitTrackingData}}}
 
 User Goals: {{{userGoals}}}
 
-Provide specific and actionable recommendations to improve consistency and achieve their goals. Consider optimal times, potential roadblocks, and motivational tips.
+1.  **Recommendations**: Provide specific and actionable recommendations to improve consistency and achieve their goals.
+2.  **Pattern Detection**: Identify any patterns in the data, such as days when habits are commonly missed.
+3.  **Optimal Time Suggestion**: Based on the user's successful completions, recommend the best times of day to perform their habits.
 `,
 });
 
