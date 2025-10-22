@@ -41,10 +41,8 @@ import {
   XCircle,
 } from "lucide-react";
 import Logo from "./logo";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { StatCard } from "./stat-card";
 import {
-  mockHabits,
   mockAchievements,
   mockProgressData,
   habitIcons,
@@ -62,55 +60,62 @@ import {
 } from "@/components/ui/chart";
 import { BarChart, Bar, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { cn } from "@/lib/utils";
-
+import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
+import { addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { collection, doc, where } from "firebase/firestore";
 
 export default function Dashboard() {
-  const [habits, setHabits] = useState<Habit[]>(mockHabits);
+  const auth = useAuth();
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  const habitsQuery = useMemoFirebase(() => {
+      if (!user) return null;
+      return collection(firestore, 'users', user.uid, 'habits');
+  }, [firestore, user]);
+  
+  const { data: habits = [], isLoading: isLoadingHabits } = useCollection<Habit>(habitsQuery);
+
   const [achievements, setAchievements] = useState<Achievement[]>(mockAchievements);
   const [today, setToday] = useState(new Date());
   const [activeTab, setActiveTab] = useState("today");
 
-  const userAvatar = PlaceHolderImages.find(p => p.id === 'user-avatar-1');
-
   const todayISO = today.toISOString().split("T")[0];
 
   const toggleHabitCompletion = (habitId: string, completed: boolean) => {
-    setHabits(habits.map(h => {
-      if (h.id === habitId) {
-        const newCompletedDates = new Set(h.completed_dates);
-        if (completed) {
-          newCompletedDates.add(todayISO);
-        } else {
-          newCompletedDates.delete(todayISO);
-        }
-        return { ...h, completed_dates: Array.from(newCompletedDates) };
-      }
-      return h;
-    }));
+    const habit = habits.find(h => h.id === habitId);
+    if (!habit || !user) return;
+
+    const docRef = doc(firestore, 'users', user.uid, 'habits', habitId);
+    const newCompletedDates = new Set(habit.completed_dates);
+
+    if (completed) {
+      newCompletedDates.add(todayISO);
+    } else {
+      newCompletedDates.delete(todayISO);
+    }
+
+    updateDocumentNonBlocking(docRef, { completed_dates: Array.from(newCompletedDates) });
   };
   
   const handleAddHabit = (newHabit: Omit<Habit, 'id' | 'completed_dates'>) => {
-    const habitToAdd: Habit = {
-      ...newHabit,
-      id: Date.now().toString(),
-      completed_dates: [],
-    };
-    setHabits(prev => [...prev, habitToAdd]);
+    if (!user) return;
+    const collectionRef = collection(firestore, 'users', user.uid, 'habits');
+    addDocumentNonBlocking(collectionRef, {
+        ...newHabit,
+        completed_dates: [],
+    });
   };
   
   const isHabitCompletedToday = (habit: Habit) => {
     return habit.completed_dates.includes(todayISO);
   };
   
-  const dailyHabits = habits.filter(h => h.frequency === 'daily');
-  const weeklyHabits = habits.filter(h => h.frequency === 'weekly');
-  const monthlyHabits = habits.filter(h => h.frequency === 'monthly');
-
   const habitsForToday = useMemo(() => {
     const dayOfWeek = today.getDay(); // Sunday - 0, ...
     const date = today.getDate();
 
-    return habits.filter(habit => {
+    return (habits || []).filter(habit => {
       if (habit.frequency === 'daily') return true;
       if (habit.frequency === 'weekly' && dayOfWeek === 1) return true; // Assuming weekly habits are on Mondays
       if (habit.frequency === 'monthly' && date === 1) return true; // Assuming monthly habits are on the 1st
@@ -126,7 +131,7 @@ export default function Dashboard() {
     let longestStreak = 0;
     let currentStreak = 0;
 
-    if (habits.length > 0) {
+    if (habits && habits.length > 0) {
         const allCompletionDates = new Set(habits.flatMap(h => h.completed_dates));
         const sortedDates = Array.from(allCompletionDates).sort();
 
@@ -187,7 +192,7 @@ export default function Dashboard() {
       }
     }
 
-    habits.forEach(habit => {
+    (habits || []).forEach(habit => {
       if (habit.reminderTime && Notification.permission === 'granted') {
         const [hours, minutes] = habit.reminderTime.split(':');
         const now = new Date();
@@ -227,6 +232,10 @@ export default function Dashboard() {
 
   const mainContentTabs = ["today", "progress"];
   const isDashboardTabActive = mainContentTabs.includes(activeTab) || activeTab === 'dashboard';
+
+  const handleLogout = () => {
+    auth.signOut();
+  }
 
   return (
     <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
@@ -298,19 +307,19 @@ export default function Dashboard() {
                 className="rounded-full border w-8 h-8"
               >
                 <Avatar className="h-8 w-8">
-                  {userAvatar && <AvatarImage src={userAvatar.imageUrl} alt="User Avatar" />}
-                  <AvatarFallback>U</AvatarFallback>
+                  {user?.photoURL && <AvatarImage src={user.photoURL} alt="User Avatar" />}
+                  <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
                 </Avatar>
                 <span className="sr-only">Toggle user menu</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel>{user?.displayName || 'My Account'}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>Settings</DropdownMenuItem>
               <DropdownMenuItem>Support</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>
@@ -321,7 +330,7 @@ export default function Dashboard() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatCard title="Current Streak" value={`${streaks.current} Days`} icon={Flame} description={`Longest: ${streaks.longest} days`} />
             <StatCard title="Today's Progress" value={`${completionPercentage}%`} icon={Target} description={`${completedTodayCount} / ${habitsForToday.length} completed`} />
-            <StatCard title="Completed Habits" value={habits.reduce((acc, h) => acc + h.completed_dates.length, 0)} icon={CheckCircle2} description="All time" />
+            <StatCard title="Completed Habits" value={(habits || []).reduce((acc, h) => acc + h.completed_dates.length, 0)} icon={CheckCircle2} description="All time" />
             <StatCard title="Achievements" value={`${achievements.filter(a => a.unlocked).length} / ${achievements.length}`} icon={Trophy} description="Unlocked" />
           </div>
 
@@ -340,7 +349,9 @@ export default function Dashboard() {
                         <CardDescription>Check off your habits as you complete them.</CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                         {habitsForToday.length > 0 ? habitsForToday.map(habit => {
+                         {isLoadingHabits ? (
+                           <p>Loading habits...</p>
+                         ) : habitsForToday.length > 0 ? habitsForToday.map(habit => {
                             const Icon = habitIcons[habit.icon] || Target;
                             return (
                             <div key={habit.id} className={cn("flex items-center gap-4 rounded-lg p-3 transition-colors", isHabitCompletedToday(habit) ? 'bg-accent/50' : 'bg-muted/20')}>
@@ -445,7 +456,7 @@ export default function Dashboard() {
                 </Tabs>
              </div>
               <div className="lg:col-span-1">
-                <AIHelper habits={habits} streaks={streaks} />
+                <AIHelper habits={habits || []} streaks={streaks} />
               </div>
           </div>
         </main>

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Orbitron } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
+import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 const orbitron = Orbitron({ subsets: ['latin'], variable: '--font-orbitron' });
 
@@ -26,8 +27,10 @@ export default function RootLayout({
         />
       </head>
       <body className={`${orbitron.variable} font-headline antialiased`}>
-        {children}
-        <Toaster />
+        <FirebaseClientProvider>
+          {children}
+          <Toaster />
+        </FirebaseClientProvider>
       </body>
     </html>
   );

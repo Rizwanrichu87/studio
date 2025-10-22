@@ -31,12 +31,41 @@
         "email",
         "registrationDate"
       ]
+    },
+    "Habit": {
+      "title": "Habit",
+      "description": "Represents a habit that a user is tracking.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "frequency": {
+          "type": "string",
+          "enum": ["daily", "weekly", "monthly"]
+        },
+        "reminderTime": {
+          "type": "string",
+          "format": "time"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "completed_dates": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "required": ["name", "frequency", "icon", "completed_dates"]
     }
   },
   "auth": {
     "providers": [
       "password",
-      "anonymous"
+      "google.com"
     ]
   },
   "firestore": {
@@ -56,8 +85,28 @@
             }
           ]
         }
+      },
+      {
+        "path": "/users/{userId}/habits/{habitId}",
+        "definition": {
+          "entityName": "Habit",
+          "schema": {
+            "$ref": "#/backend/entities/Habit"
+          },
+          "description": "Stores habits for a specific user. Authorization ensures that only the user can access their own habits.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The user's UID."
+            },
+            {
+              "name": "habitId",
+              "description": "The unique ID for the habit."
+            }
+          ]
+        }
       }
     ],
-    "reasoning": "The Firestore structure is designed to manage user accounts for the AI Habitual application, focusing on secure and efficient data access.  The primary collection is `/users/{userId}`, which stores user profile data. This design emphasizes path-based ownership, providing strong security guarantees and simplifying security rules. By storing each user's data in a dedicated document, authorization rules can be based solely on the `request.auth.uid` matching the `userId` parameter in the path, ensuring that only the authenticated user can access their data. This strategy achieves authorization independence, avoiding the need for complex `get()` calls in security rules and enabling atomic operations. The `/users/{userId}` collection supports the required QAPs (Queries are Permissions): List operations are inherently secure because each user's data is isolated within their own document."
+    "reasoning": "The Firestore structure is designed to manage user accounts and their habits for the AI Habitual application. The `/users/{userId}` path stores public user profile information, with security rules ensuring that only the authenticated user can modify their own data. The subcollection `/users/{userId}/habits/{habitId}` stores the habits for each user, ensuring data isolation and security. This path-based ownership strategy provides strong security guarantees, simplifies security rules, and enables efficient querying of a user's own habits without complex lookups."
   }
 }

@@ -10,6 +10,13 @@ export type Habit = {
   icon: keyof typeof habitIcons;
 };
 
+export type User = {
+  id: string;
+  username: string;
+  email: string;
+  registrationDate: string;
+};
+
 export type Achievement = {
   id: string;
   name: string;
