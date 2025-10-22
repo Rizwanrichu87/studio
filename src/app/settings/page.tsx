@@ -15,16 +15,19 @@ import {
   Pencil,
   Trash2,
   User as UserIcon,
+  LogOut,
+  Camera,
 } from "lucide-react";
 import {
   habitIcons,
 } from "@/lib/data";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import type { Habit } from "@/lib/types";
 import { AddHabitDialog } from "@/components/add-habit-dialog";
 import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { collection, doc, setDoc } from "firebase/firestore";
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
@@ -46,6 +49,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { updateProfile } from "firebase/auth";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const profileFormSchema = z.object({
   username: z.string().min(2, "Username must be at least 2 characters."),
@@ -59,6 +63,8 @@ export default function SettingsPage() {
   const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState("settings");
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -94,20 +100,59 @@ export default function SettingsPage() {
   const onProfileSubmit = async (values: z.infer<typeof profileFormSchema>) => {
     if (!user) return;
     try {
-      await updateProfile(user, { displayName: values.username });
-      const userDocRef = doc(firestore, 'users', user.uid);
-      await setDoc(userDocRef, { username: values.username }, { merge: true });
+      if (values.username !== user.displayName) {
+        await updateProfile(user, { displayName: values.username });
+        const userDocRef = doc(firestore, 'users', user.uid);
+        await setDoc(userDocRef, { username: values.username }, { merge: true });
 
-      toast({
-        title: "Profile Updated",
-        description: "Your username has been successfully updated.",
-      });
+        toast({
+          title: "Profile Updated",
+          description: "Your username has been successfully updated.",
+        });
+      }
     } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Update Failed",
         description: error.message,
       });
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      handlePhotoUpload(e.target.files[0]);
+    }
+  };
+
+  const handlePhotoUpload = async (file: File) => {
+    if (!user) return;
+
+    setIsUploading(true);
+    try {
+      const storage = getStorage();
+      const photoRef = ref(storage, `avatars/${user.uid}/${file.name}`);
+
+      await uploadBytes(photoRef, file);
+      const photoURL = await getDownloadURL(photoRef);
+      
+      await updateProfile(user, { photoURL });
+      const userDocRef = doc(firestore, 'users', user.uid);
+      await setDoc(userDocRef, { photoURL }, { merge: true });
+
+      toast({
+        title: "Photo Updated",
+        description: "Your profile photo has been successfully updated.",
+      });
+
+    } catch(error: any) {
+      toast({
+        variant: "destructive",
+        title: "Upload Failed",
+        description: error.message,
+      });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -161,6 +206,10 @@ export default function SettingsPage() {
     }
   };
 
+  const handleLogout = () => {
+    auth.signOut();
+  };
+
   return (
     <AppLayout activeTab={activeTab} onNavClick={handleNavClick} onHabitSubmit={handleHabitSubmit}>
        <AddHabitDialog onHabitSubmit={handleHabitSubmit} habitToEdit={habitToEdit} open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -188,30 +237,54 @@ export default function SettingsPage() {
                 <UserIcon className="h-5 w-5 text-primary" />
                 Profile Settings
               </CardTitle>
-              <CardDescription>Update your display name.</CardDescription>
+              <CardDescription>Update your display name and photo.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Form {...profileForm}>
-                <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
-                  <FormField
-                    control={profileForm.control}
-                    name="username"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Username</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Your Name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <Button type="submit" disabled={profileForm.formState.isSubmitting}>
-                    {profileForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Save Changes
-                  </Button>
-                </form>
-              </Form>
+                <div className="flex items-center gap-6 mb-6">
+                    <div className="relative">
+                        <Avatar className="h-24 w-24 border-2 border-primary">
+                            <AvatarImage src={user.photoURL || ''} alt={user.displayName || 'User'}/>
+                            <AvatarFallback className="text-3xl">{user.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                        </Avatar>
+                        <Button
+                            size="icon"
+                            className="absolute bottom-0 right-0 rounded-full h-8 w-8"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isUploading}
+                            aria-label="Change profile photo"
+                        >
+                            {isUploading ? <Loader2 className="h-4 w-4 animate-spin"/> : <Camera className="h-4 w-4"/>}
+                        </Button>
+                        <Input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileSelect}
+                            className="hidden"
+                            accept="image/png, image/jpeg"
+                        />
+                    </div>
+                  <Form {...profileForm}>
+                    <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4 flex-1">
+                      <FormField
+                        control={profileForm.control}
+                        name="username"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Username</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Your Name" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button type="submit" disabled={profileForm.formState.isSubmitting}>
+                        {profileForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save Changes
+                      </Button>
+                    </form>
+                  </Form>
+                </div>
             </CardContent>
           </Card>
 
@@ -259,6 +332,21 @@ export default function SettingsPage() {
               )}
             </CardContent>
           </Card>
+
+           <Card className="glass-card w-full max-w-2xl">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <LogOut className="h-5 w-5 text-destructive" />
+                Account Actions
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Button variant="destructive" onClick={handleLogout}>
+                Log Out
+              </Button>
+            </CardContent>
+          </Card>
+
         </div>
     </AppLayout>
   );

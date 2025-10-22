@@ -20,6 +20,7 @@ export type User = {
   username: string;
   email: string;
   registrationDate: string;
+  photoURL?: string;
 };
 
 export type Achievement = {

@@ -71,6 +71,7 @@ export default function SignupPage() {
           username: values.username,
           email: values.email,
           registrationDate: new Date().toISOString(),
+          photoURL: user.photoURL,
         });
       }
 
@@ -97,6 +98,7 @@ export default function SignupPage() {
           username: user.displayName,
           email: user.email,
           registrationDate: new Date().toISOString(),
+          photoURL: user.photoURL,
       }, { merge: true });
 
       toast({ title: 'Login successful!' });
