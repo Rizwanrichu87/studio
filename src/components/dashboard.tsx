@@ -29,7 +29,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import {
-  BarChart,
+  BarChart as BarChartIcon,
   Bell,
   CheckCircle2,
   Flame,
@@ -60,7 +60,7 @@ import {
   ChartTooltipContent,
   ChartConfig,
 } from "@/components/ui/chart";
-import { Bar, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { cn } from "@/lib/utils";
 
 
@@ -365,27 +365,29 @@ export default function Dashboard() {
                            <CardDescription>Habits completed in the last 7 days.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                          <ChartContainer config={chartConfig} className="h-[200px] w-full">
-                            <BarChart accessibilityLayer data={chartData} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
-                              <CartesianGrid vertical={false} />
-                              <XAxis
-                                dataKey="date"
-                                tickLine={false}
-                                axisLine={false}
-                                tickMargin={8}
-                              />
-                              <YAxis />
-                              <ChartTooltip
-                                cursor={false}
-                                content={<ChartTooltipContent />}
-                              />
-                              <Bar
-                                dataKey="completed"
-                                fill="var(--color-completed)"
-                                radius={4}
-                              />
-                            </BarChart>
-                          </ChartContainer>
+                           <ChartContainer config={chartConfig} className="h-[200px] w-full">
+                                <ResponsiveContainer>
+                                  <BarChart data={chartData} margin={{ top: 20, right: 20, bottom: 5, left: 0 }}>
+                                    <CartesianGrid vertical={false} />
+                                    <XAxis
+                                      dataKey="date"
+                                      tickLine={false}
+                                      axisLine={false}
+                                      tickMargin={8}
+                                    />
+                                    <YAxis />
+                                    <ChartTooltip
+                                      cursor={false}
+                                      content={<ChartTooltipContent />}
+                                    />
+                                    <Bar
+                                      dataKey="completed"
+                                      fill="var(--color-completed)"
+                                      radius={4}
+                                    />
+                                  </BarChart>
+                                </ResponsiveContainer>
+                              </ChartContainer>
                         </CardContent>
                       </Card>
                       <Card className="flex flex-col">
