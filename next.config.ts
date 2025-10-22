@@ -30,6 +30,11 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  devIndicators: {
+    allowedDevOrigins: [
+      '*.cluster-cd3bsnf6r5bemwki2bxljme5as.cloudworkstations.dev',
+    ],
+  },
 };
 
 export default nextConfig;
