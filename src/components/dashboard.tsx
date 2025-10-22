@@ -58,10 +58,8 @@ import {
   ChartTooltip,
   ChartTooltipContent,
   ChartConfig,
-  ChartLegend,
-  ChartLegendContent,
 } from "@/components/ui/chart";
-import { BarChart, Bar, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { cn } from "@/lib/utils";
 
 
@@ -69,6 +67,7 @@ export default function Dashboard() {
   const [habits, setHabits] = useState<Habit[]>(mockHabits);
   const [achievements, setAchievements] = useState<Achievement[]>(mockAchievements);
   const [today, setToday] = useState(new Date());
+  const [activeTab, setActiveTab] = useState("today");
 
   const userAvatar = PlaceHolderImages.find(p => p.id === 'user-avatar-1');
 
@@ -221,6 +220,13 @@ export default function Dashboard() {
     },
   };
 
+  const handleNavClick = (tab: string) => {
+    setActiveTab(tab);
+  };
+
+  const mainContentTabs = ["today", "progress"];
+  const isDashboardTabActive = mainContentTabs.includes(activeTab) || activeTab === 'dashboard';
+
   return (
     <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
       <div className="hidden border-r bg-card lg:block">
@@ -237,27 +243,33 @@ export default function Dashboard() {
           </div>
           <div className="flex-1 overflow-auto py-2">
             <nav className="grid items-start px-4 text-sm font-medium">
-              <a
-                href="#"
-                className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2 text-primary transition-all hover:text-primary"
+              <button
+                onClick={() => handleNavClick('today')}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+                  isDashboardTabActive && "bg-muted text-primary"
+                )}
               >
                 <LayoutDashboard className="h-4 w-4" />
                 Dashboard
-              </a>
-              <a
-                href="#"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+              </button>
+              <button
+                onClick={() => handleNavClick('achievements')}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+                  activeTab === 'achievements' && "bg-muted text-primary"
+                )}
               >
                 <Trophy className="h-4 w-4" />
                 Achievements
-              </a>
-              <a
-                href="#"
+              </button>
+              <button
+                onClick={() => { alert("Settings not implemented yet.")}}
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
                 <Settings className="h-4 w-4" />
                 Settings
-              </a>
+              </button>
             </nav>
           </div>
         </div>
@@ -314,7 +326,7 @@ export default function Dashboard() {
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
              <div className="lg:col-span-2">
-                <Tabs defaultValue="today">
+                <Tabs value={activeTab} onValueChange={setActiveTab} defaultValue="today">
                   <TabsList>
                     <TabsTrigger value="today">Today's Habits</TabsTrigger>
                     <TabsTrigger value="progress">Progress</TabsTrigger>
