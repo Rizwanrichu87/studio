@@ -117,18 +117,15 @@ export default function Dashboard() {
             return true;
         }
         if (habit.frequency === 'weekly') {
-            // Show on the same day of the week it was created
-            const habitCreationDate = habit.id ? parseISO(new Date(parseInt(habit.id.substring(0, 8), 16) * 1000).toISOString()) : new Date();
-            return getDay(habitCreationDate) === getDay(selectedDate);
+            return true;
         }
         if (habit.frequency === 'monthly') {
-            // Show on the same day of the month it was created
-            const habitCreationDate = habit.id ? parseISO(new Date(parseInt(habit.id.substring(0, 8), 16) * 1000).toISOString()) : new Date();
-            return getDate(habitCreationDate) === getDate(selectedDate);
+            return true;
         }
         return false;
     });
 }, [habits, selectedDate]);
+
 
   const completedTodayCount = habitsForToday.filter(isHabitCompletedToday).length;
   const completionPercentage = habitsForToday.length > 0 ? Math.round((completedTodayCount / habitsForToday.length) * 100) : 0;
