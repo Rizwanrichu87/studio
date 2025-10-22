@@ -76,7 +76,7 @@ export default function SettingsPage() {
       return collection(firestore, 'users', user.uid, 'habits');
   }, [firestore, user]);
   
-  const { data: habits = [], isLoading: isLoadingHabits } = useCollection<Habit>(habitsQuery);
+  const { data: habits, isLoading: isLoadingHabits } = useCollection<Habit>(habitsQuery);
   
   const [habitToEdit, setHabitToEdit] = useState<Habit | undefined>(undefined);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -259,7 +259,7 @@ export default function SettingsPage() {
               <CardContent className="space-y-4">
                  {isLoadingHabits ? (
                    <p>Loading habits...</p>
-                 ) : habits.length > 0 ? habits.map(habit => {
+                 ) : habits && habits.length > 0 ? habits.map(habit => {
                     const Icon = habitIcons[habit.icon] || Settings;
                     return (
                     <div key={habit.id} className="flex items-center gap-4 rounded-lg p-3 transition-colors bg-muted/20">
