@@ -22,6 +22,10 @@ export const mockAchievements: Achievement[] = [
   { id: '4', name: 'Perfect Week', description: 'Complete all daily habits for 7 days.', icon: CalendarDays, unlocked: false },
   { id: '5', name: 'Habit Machine', description: 'Complete 50 habit tasks in total.', icon: BrainCircuit, unlocked: true },
   { id: '6', name: 'Newbie No More', description: 'Add 5 different habits.', icon: Target, unlocked: false },
+  { id: '7', name: 'Monthly Milestone', description: 'Maintain a 30-day streak.', icon: CalendarDays, unlocked: false },
+  { id: '8', name: 'Habit Pro', description: 'Complete 100 habit tasks in total.', icon: Award, unlocked: false },
+  { id: '9', name: 'Collector', description: 'Add 10 different habits.', icon: Target, unlocked: false },
+  { id: '10', name: 'AI Enthusiast', description: 'Use an AI feature for the first time.', icon: BrainCircuit, unlocked: false },
 ];
 
 // Generate mock progress data for the last 30 days
