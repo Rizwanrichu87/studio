@@ -67,7 +67,7 @@ import { cn } from "@/lib/utils";
 import { useAuth, useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { collection, doc } from "firebase/firestore";
-import { startOfWeek, endOfWeek, eachDayOfInterval, format, parseISO, subDays } from 'date-fns';
+import { startOfWeek, endOfWeek, eachDayOfInterval, format, parseISO, subDays, startOfMonth, endOfMonth, eachDayOfInterval as eachDayOfIntervalMonth } from 'date-fns';
 import Link from "next/link";
 import {
   AlertDialog,
@@ -181,7 +181,7 @@ export default function Dashboard() {
       total += habit.targetCompletions || 1;
     });
     return { completedTodayCount: completed, totalTodayTarget: total };
-  }, [habitsForToday, todayISO]);
+  }, [habitsForToday, todayISO, getCompletionCount]);
 
   const completionPercentage = totalTodayTarget > 0 ? Math.round((completedTodayCount / totalTodayTarget) * 100) : 0;
 
@@ -258,7 +258,7 @@ export default function Dashboard() {
         }
       }
     });
-  }, [habits, selectedDate, todayISO]);
+  }, [habits, selectedDate, todayISO, getCompletionCount]);
 
 
   const weeklyChartData = useMemo(() => {
@@ -281,16 +281,18 @@ export default function Dashboard() {
             completed: completedCount,
         };
     });
-}, [selectedDate, habits]);
+}, [selectedDate, habits, getCompletionCount]);
 
-  const streakChartData = useMemo(() => {
+ const streakChartData = useMemo(() => {
     if (!habits || habits.length === 0) return [];
     
-    const days = eachDayOfInterval({ start: subDays(new Date(), 29), end: new Date() });
+    const monthStart = startOfMonth(selectedDate);
+    const monthEnd = endOfMonth(selectedDate);
+    const days = eachDayOfIntervalMonth({ start: monthStart, end: monthEnd });
     
     return days.map(day => {
       const dayData: {[key: string]: any} = {
-        date: format(day, 'MMM d')
+        date: format(day, 'd')
       };
 
       habits.forEach(habit => {
@@ -306,7 +308,7 @@ export default function Dashboard() {
 
       return dayData;
     });
-  }, [habits]);
+  }, [habits, selectedDate]);
 
   const chartConfig: ChartConfig = useMemo(() => {
     const config: ChartConfig = {
@@ -609,7 +611,7 @@ export default function Dashboard() {
                       <Card className="glass-card">
                           <CardHeader>
                             <CardTitle>Streak Progression</CardTitle>
-                             <CardDescription>30-day streak overview for each habit.</CardDescription>
+                             <CardDescription>Streak overview for each habit in {format(selectedDate, 'MMMM yyyy')}.</CardDescription>
                           </CardHeader>
                           <CardContent>
                              <ChartContainer config={chartConfig} className="h-[300px] w-full">
@@ -620,7 +622,7 @@ export default function Dashboard() {
                                       tickLine={false}
                                       axisLine={false}
                                       tickMargin={8}
-                                      tickFormatter={(value) => value.slice(0, 3)}
+                                      tickFormatter={(value) => value}
                                     />
                                     <YAxis allowDecimals={false} />
                                     <ChartTooltip
