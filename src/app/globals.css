@@ -4,58 +4,58 @@
 
 @layer base {
   :root {
-    --background: 228 12% 10%; /* Deep space blue */
-    --foreground: 210 40% 98%; /* Light grey/white */
-    --card: 228 12% 15%; /* Slightly lighter card background */
+    --background: 240 10% 11%; /* Deep indigo */
+    --foreground: 210 40% 98%;
+    --card: 240 10% 16%; /* Slightly lighter card background */
     --card-foreground: 210 40% 98%;
-    --popover: 228 12% 10%;
+    --popover: 240 10% 11%;
     --popover-foreground: 210 40% 98%;
-    --primary: 198 93% 60%; /* Bright cyan for primary actions */
-    --primary-foreground: 228 12% 10%;
-    --secondary: 228 10% 25%;
-    --secondary-foreground: 198 93% 60%;
-    --muted: 228 10% 25%;
-    --muted-foreground: 210 40% 70%;
-    --accent: 198 93% 60%; /* Using primary color for accent */
-    --accent-foreground: 228 12% 10%;
+    --primary: 310 90% 65%; /* Vibrant magenta/pink */
+    --primary-foreground: 240 10% 11%;
+    --secondary: 180 90% 45%; /* Bright cyan */
+    --secondary-foreground: 210 40% 98%;
+    --muted: 240 5% 26%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 180 90% 45%; /* Cyan for accents */
+    --accent-foreground: 210 40% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 228 12% 30%;
-    --input: 228 12% 30%;
-    --ring: 198 93% 60%;
-    --radius: 0.3rem;
-    --chart-1: 198 93% 60%;
-    --chart-2: 260 85% 65%;
-    --chart-3: 320 85% 65%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --border: 240 5% 30%;
+    --input: 240 5% 30%;
+    --ring: 310 90% 65%;
+    --radius: 0.5rem;
+    --chart-1: 310 90% 65%; /* Magenta */
+    --chart-2: 180 90% 45%; /* Cyan */
+    --chart-3: 43 95% 66%;  /* Gold */
+    --chart-4: 260 95% 75%; /* Lavender */
+    --chart-5: 130 80% 60%; /* Lime Green */
   }
 
   .dark {
-    --background: 228 12% 10%; /* Deep space blue */
-    --foreground: 210 40% 98%; /* Light grey/white */
-    --card: 228 12% 15%; /* Slightly lighter card background */
+    --background: 240 10% 11%; /* Deep indigo */
+    --foreground: 210 40% 98%;
+    --card: 240 10% 16%; /* Slightly lighter card background */
     --card-foreground: 210 40% 98%;
-    --popover: 228 12% 10%;
+    --popover: 240 10% 11%;
     --popover-foreground: 210 40% 98%;
-    --primary: 198 93% 60%; /* Bright cyan for primary actions */
-    --primary-foreground: 228 12% 10%;
-    --secondary: 228 10% 25%;
-    --secondary-foreground: 198 93% 60%;
-    --muted: 228 10% 25%;
-    --muted-foreground: 210 40% 70%;
-    --accent: 198 93% 60%; /* Using primary color for accent */
-    --accent-foreground: 228 12% 10%;
+    --primary: 310 90% 65%; /* Vibrant magenta/pink */
+    --primary-foreground: 240 10% 11%;
+    --secondary: 180 90% 45%; /* Bright cyan */
+    --secondary-foreground: 210 40% 98%;
+    --muted: 240 5% 26%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 180 90% 45%; /* Cyan for accents */
+    --accent-foreground: 210 40% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 228 12% 30%;
-    --input: 228 12% 30%;
-    --ring: 198 93% 60%;
-    --chart-1: 198 93% 60%;
-    --chart-2: 260 85% 65%;
-    --chart-3: 320 85% 65%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --border: 240 5% 30%;
+    --input: 240 5% 30%;
+    --ring: 310 90% 65%;
+    --chart-1: 310 90% 65%; /* Magenta */
+    --chart-2: 180 90% 45%; /* Cyan */
+    --chart-3: 43 95% 66%;  /* Gold */
+    --chart-4: 260 95% 75%; /* Lavender */
+    --chart-5: 130 80% 60%; /* Lime Green */
   }
 }
 

@@ -337,7 +337,7 @@ export default function Dashboard() {
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 animate-fade-in-up">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatCard title="Current Streak" value={`${streaks.current} Days`} icon={Flame} description={`Longest: ${streaks.longest} days`} />
             <StatCard title="Today's Progress" value={`${completionPercentage}%`} icon={Target} description={`${completedTodayCount} / ${habitsForToday.length} completed`} />
@@ -364,7 +364,7 @@ export default function Dashboard() {
                          ) : habitsForToday.length > 0 ? habitsForToday.map(habit => {
                             const Icon = habitIcons[habit.icon] || Target;
                             return (
-                            <div key={habit.id} className={cn("flex items-center gap-4 rounded-lg p-3 transition-colors", isHabitCompletedToday(habit) ? 'bg-accent/50' : 'bg-muted/20')}>
+                            <div key={habit.id} className={cn("flex items-center gap-4 rounded-lg p-3 transition-colors", isHabitCompletedToday(habit) ? 'bg-accent/20' : 'bg-muted/20')}>
                                <Checkbox 
                                   id={`habit-${habit.id}`} 
                                   checked={isHabitCompletedToday(habit)}
