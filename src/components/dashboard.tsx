@@ -178,14 +178,9 @@ export default function Dashboard() {
   
   // UseEffect for notifications
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      if (Notification.permission === 'default') {
-        Notification.requestPermission();
-      }
-    }
-
+    // This effect runs to set up reminders, but permission is now requested on click.
     (habits || []).forEach(habit => {
-      if (habit.reminderTime && Notification.permission === 'granted') {
+      if (habit.reminderTime && typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
         const [hours, minutes] = habit.reminderTime.split(':');
         const now = new Date();
         const reminderDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), Number(hours), Number(minutes));
@@ -248,6 +243,20 @@ export default function Dashboard() {
     auth.signOut();
   }
 
+  const handleNotificationClick = () => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        Notification.requestPermission();
+      } else if (Notification.permission === 'denied') {
+        // You might want to guide the user on how to enable notifications in browser settings
+        console.log('Notification permission has been denied.');
+        alert('You have disabled notifications. To enable them, please go to your browser settings.');
+      }
+      // If permission is 'granted', do nothing as it's already enabled.
+    }
+  };
+
+
   return (
     <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
       <div className="hidden border-r bg-card/60 backdrop-blur-xl lg:block">
@@ -257,7 +266,7 @@ export default function Dashboard() {
               <Logo className="h-6 w-6 text-primary" />
               <span className="font-headline">AI Habitual</span>
             </a>
-            <Button variant="outline" size="icon" className="ml-auto h-8 w-8">
+            <Button variant="outline" size="icon" className="ml-auto h-8 w-8" onClick={handleNotificationClick}>
               <Bell className="h-4 w-4" />
               <span className="sr-only">Toggle notifications</span>
             </Button>
